@@ -1,3 +1,4 @@
+#include "procesos.h"
 #include<stdio.h>
 #include<stdlib.h>
 #include <unistd.h>
@@ -59,21 +60,36 @@ int main(int argc, char *argv[]){
             printf("Variable desconocida: %s\n", variable);
         }
     }
-
+    if(numNodos <= 0 || numNodos > MAX_NODOS){
+        printf("Número de nodos inválido. Debe ser entre 1 y %d.\n", MAX_NODOS);
+        return 1;
+    }
+    if(tiempoSC <= 0){
+        printf("Tiempo de sección crítica inválido. Debe ser un número positivo.\n");
+        return 1;
+    }
+    if(numPagos < 0 || numAnulaciones < 0 || numReservas < 0 || numAdmin < 0 || numConsultas < 0){
+        printf("Número de operaciones inválido. No puede ser negativo.\n");
+        return 1;
+    }
     fclose(ficheroConfig);
+    
+    char tiempoSCStr[12];
+    snprintf(tiempoSCStr, sizeof(tiempoSCStr), "%d", tiempoSC);
+    char numNodosStr[12];
+    snprintf(numNodosStr, sizeof(numNodosStr), "%d", numNodos);
+
     int procesosReceptor[numNodos+1];
     for(i=1; i<=numNodos; i++){
         procesosReceptor[i] = fork();
         if(procesosReceptor[i] == 0){
             //Aquí va el execl
             snprintf(idNodo, sizeof(idNodo), "%d", i);
-            //execl("./receptor", "receptor", idNodo, NULL);
+            //execl("./receptor", "receptor", idNodo, numNodosStr, tiempoSCStr, NULL);
             return 0;
         }
     }
 
-    char tiempoSCStr[12];
-    snprintf(tiempoSCStr, sizeof(tiempoSCStr), "%d", tiempoSC);
 
 
     int numOperaciones = (numPagos + numAnulaciones + numReservas + numAdmin + numConsultas) * numNodos;
@@ -85,7 +101,7 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./anulaciones", "anulaciones", idNodo, tiempoSCStr, NULL);
+                //execl("./anulaciones", "anulaciones", idNodo, NULL);
                 return 0;
             }
             n++;
@@ -95,7 +111,7 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./pagos", "pagos", idNodo,tiempoSCStr, NULL);
+                //execl("./pagos", "pagos", idNodo, NULL);
                 return 0;
             }
             n++;
@@ -105,7 +121,7 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./admin", "admin", idNodo, tiempoSCStr, NULL);
+                //execl("./admin", "admin", idNodo, NULL);
                 return 0;   
             }
             n++;
@@ -114,7 +130,7 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./reservas", "reservas", idNodo, tiempoSCStr, NULL);
+                //execl("./reservas", "reservas", idNodo, NULL);
                 return 0;
             }
             n++;
@@ -124,7 +140,7 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./consultas", "consultas", idNodo, tiempoSCStr, NULL);
+                //execl("./consultas", "consultas", idNodo, NULL);
                 return 0;
             }
             n++;
