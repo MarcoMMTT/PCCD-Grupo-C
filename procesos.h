@@ -163,7 +163,7 @@ int max(int a, int b){
  *   4. Libera semáforos tras actualización
  *   5. Si DEBUG está definido, imprime información de diagnóstico
  *
- * @param me Puntero a la estructura de memoria compartida del nodo
+ * @param mem Puntero a la estructura de memoria compartida del nodo
  *
  * @note Esta función es crítica en el protocolo de exclusión mutua distribuida,
  *       permitiendo que el nodo determine qué tipo de petición procesar primero.
