@@ -1,3 +1,12 @@
+/**
+ * @file procesos.h
+ * @brief Header principal del sistema de exclusión mutua distribuida con testigos
+ *
+ * Sistema de protocolo de exclusión mutua distribuida que utiliza testigos circulantes
+ * entre nodos para garantizar acceso a sección crítica. Implementa 4 niveles de prioridad
+ * jerárquicos y sincronización mediante semáforos y colas de mensajes.
+ */
+
 #ifndef PROCESOS_H
 #define PROCESOS_H
 
@@ -11,6 +20,7 @@
 #include <sys/time.h>
 #include <sys/msg.h>
 #include <sys/types.h>
+#include <stdbool.h> // Para false/true
 
 
 //----------------------------------------------------- {Ifdefs} ----------------------------------------
@@ -116,7 +126,7 @@ typedef struct {
             sem_atendidas, sem_peticiones, sem_mi_peticion, sem_buzones_nodos, sem_prioridad_maxima,sem_prioridad_maxima_otro_nodo;
 
     //VARIABLES QUE USAN LOS ESCRITORES:
-    int contador_anul_pendientes, contador_pag_adm_pendientes, contador_res_pendientes, contador_cons_pendientes;
+    int contador_anul_pendientes, contador_pag_adm_pendientes, contador_res_pendientes, contador_cons_pendientes, contador_procesos_max_SC;
 
     sem_t sem_contador_procesos_max_SC;
     sem_t sem_contador_anul_pendientes, sem_contador_pag_adm_pendientes, sem_contador_res_pendientes, sem_contador_cons_pendientes;
@@ -212,22 +222,35 @@ void calcular_prioridad_maxima(memoria_nodo *mem){
     sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_wait(&(mem->sem_prioridad_maxima));
     #ifdef __DEBUG
-        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",me->prioridad_maxima, me->prioridad_max_otro_nodo);
+        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",mem->prioridad_maxima, mem->prioridad_max_otro_nodo);
     #endif
     sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_post(&(mem->sem_prioridad_maxima));
 }
 
+/**
+ * @brief Envía el testigo maestro al próximo nodo que tiene peticiones pendientes.
+ *
+ * Implementa la transferencia del testigo dentro del protocolo de exclusión mutua distribuida.
+ * Busca circularmente el siguiente nodo con peticiones no satisfechas, priorizando por nivel
+ * de prioridad. Actualiza el estado de peticiones atendidas y transfiere el testigo maestro.
+ *
+ * @param mi_id ID del nodo actual que posee el testigo (1-based)
+ * @param mem Puntero a la estructura de memoria compartida
+ *
+ * @note Función crítica: marca qué prioridades están completas antes de buscar destinatario
+ */
 void send_testigo(int mi_id, memoria_nodo *mem){
     int i=0, j=0;
     int id_buscar;
     int id_inicio;
     int encontrado = 0;
 
-    struct msgbuf_mensaje mensaje_testigo;
-    mensaje_testigo.msg_type = (long)2; // TESTIGO_MAESTRO
+    msgbuf_mensaje mensaje_testigo;
+    mensaje_testigo.msg_type = (long)2; // 2 = TESTIGO_MAESTRO
     mensaje_testigo.id = mi_id;
 
+    // Calcular siguiente nodo en orden circular
     if(mi_id + 1 > mem->num_nodos){
         id_buscar = 1;
     }else{
@@ -240,11 +263,7 @@ void send_testigo(int mi_id, memoria_nodo *mem){
     mem->contador_procesos_max_SC = 0;
     sem_post(&(mem->sem_contador_procesos_max_SC));
 
-    /*
-     * Si no quedan procesos pendientes en el nodo se actualiza 
-     * la petición de esa prioridad como atendida
-    */
-
+    // Marcar como "atendidas" las prioridades sin procesos pendientes
     sem_wait(&(mem->sem_atendidas));
     sem_wait(&(mem->sem_peticiones));
 
@@ -275,21 +294,20 @@ void send_testigo(int mi_id, memoria_nodo *mem){
     sem_post(&(mem->sem_atendidas));
     sem_post(&(mem->sem_peticiones));
 
-    /*
-     * Buscar destinatario del testigo
-     * Se recorren las prio de mayor a menor.
-    */
-
+    // Búsqueda circular: recorrer prioridades de mayor a menor
     for(j= P -1; j>=0; j--){
-        id_buscar = id_inicio;
+        id_buscar = id_inicio; // Reiniciar desde siguiente nodo
         for(i=0; i < mem->num_nodos; i++){
+            // Mantener búsqueda circular
             if(id_buscar > mem->num_nodos){
                 id_buscar = 1;
             }
+            // Buscar nodo diferente con peticiones pendientes
             if(id_buscar != mi_id){
                 sem_wait(&(mem->sem_peticiones));
                 sem_wait(&(mem->sem_atendidas));
                 
+                // Verificar si tiene peticiones sin atender en prioridad j
                 if(mem->peticiones[id_buscar-1][j] > mem->atendidas[id_buscar-1][j]){
                     sem_post(&(mem->sem_atendidas));
                     sem_post(&(mem->sem_peticiones));
@@ -311,6 +329,7 @@ void send_testigo(int mi_id, memoria_nodo *mem){
 
     }
 
+    // Enviar testigo al nodo encontrado
     if(encontrado){
         mensaje_testigo.id = id_buscar;
         sem_wait(&(mem->sem_atendidas));
@@ -332,6 +351,7 @@ void send_testigo(int mi_id, memoria_nodo *mem){
         #endif
 
     } else {
+        // Sin destinatario: no hay peticiones pendientes en el sistema
         #ifdef __DEBUG
         printf("DEBUG: No hay ningún nodo esperando el testigo.\n");
         #endif
@@ -339,16 +359,31 @@ void send_testigo(int mi_id, memoria_nodo *mem){
 
 }
 
+/**
+ * @brief Broadcast de solicitud de acceso a sección crítica a todos los demás nodos.
+ *
+ * Envía una petición de acceso con prioridad especificada a todos los nodos del sistema.
+ * Incrementa el contador de petición para garantizar unicidad y registra la solicitud
+ * en la matriz de peticiones pendientes. Utiliza colas de mensajes para transmisión.
+ *
+ * @param mi_id ID del nodo solicitante (1-based)
+ * @param mem Puntero a la estructura de memoria compartida
+ * @param prioridad Nivel de prioridad (1=CONSULTA, 2=RESERVA, 3=PAG_ADM, 4=ANUL)
+ *
+ * @note Cada petición recibe un número secuencial único dentro del nodo
+ */
 void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
 
-    struct msgbuf_mensaje mensaje_peticion;
+    msgbuf_mensaje mensaje_peticion;
     mensaje_peticion.msg_type = (long)1; // SOLICITUD
     mensaje_peticion.id = mi_id;
     mensaje_peticion.prioridad = prioridad;
 
+    // Incrementar secuencia de peticiones de este nodo
     sem_wait(&(mem->sem_mi_peticion));
     mem->mi_peticion++;
 
+    // Registrar petición en matriz de peticiones pendientes
     sem_wait(&(mem->sem_peticiones));
     mem->peticiones[mi_id-1][prioridad-1] = mem->mi_peticion;
     sem_post(&(mem->sem_peticiones));
@@ -360,6 +395,7 @@ void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
     printf("[NODO %d] Enviando mensaje de tipo %ld con petición: %i, con prioridad %d\n", mi_id, mensaje_peticion.msg_type, mensaje_peticion.peticion, mensaje_peticion.prioridad);
     #endif
 
+    // Broadcast a todos los nodos del sistema (menos a sí mismo)
     for(int i = 0;i < mem->num_nodos; i++){
         if(i != mi_id - 1){
             sem_wait(&(mem->sem_buzones_nodos));
