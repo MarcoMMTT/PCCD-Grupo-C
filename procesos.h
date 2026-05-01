@@ -108,7 +108,7 @@ typedef struct {
     int consultas_dentro;
     int id_nodo_master;
     int testigos_recogidos;
-    int id_nodo_master;
+    int nodo_master;    // Soy el nodo master
     int nodos_con_consultas[NUM_MAX_NODOS];
 
     sem_t sem_consultas_dentro, sem_nodo_master, sem_testigos_recogidos, sem_id_nodo_master, sem_nodos_con_consultas;
@@ -412,6 +412,20 @@ void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
     }
 }
 
+
+/**
+ * @brief Envía testigos de copia a nodos que tienen consultas pendientes.
+ *
+ * Implementa el envío de testigos falsos (testigos de copia) a los nodos lectores
+ * que tienen consultas pendientes sin atender. Estos testigos permiten que múltiples
+ * lectores accedan simultáneamente a la sección crítica sin necesidad del testigo maestro.
+ * Solo actualiza y envía testigos a nodos con consultas pendientes.
+ *
+ * @param mi_id ID del nodo maestro que posee el testigo maestro (1-based)
+ * @param mem Puntero a la estructura de memoria compartida
+ *
+ * @note Solo se envían testigos para consultas (lecturas), no para otras prioridades
+ */
 void send_testigo_falso(int mi_id, memoria_nodo *mem){
     msgbuf_mensaje mensaje_testigo_falso;
     mensaje_testigo_falso.msg_type = (long)3; // ENVIAR_TESTIGO_COPIA
@@ -449,7 +463,27 @@ void send_testigo_falso(int mi_id, memoria_nodo *mem){
     }
 }
 
-void gestionar_fin_consultas_nodo_master(int mi_id, memoria_nodo *mem){
+/**
+ * @brief Gestiona el fin de consultas en el nodo maestro y decide el destino del testigo.
+ *
+ * Función crítica que ejecuta el nodo maestro al finalizar operaciones de lectura/consulta.
+ * Calcula la máxima prioridad de peticiones en otros nodos y determina si debe:
+ *   1. Ceder el testigo al nodo con peticiones de mayor prioridad
+ *   2. Retener el testigo para atender sus propias peticiones de alta prioridad (ANUL/PAG_ADM/RESERVA)
+ *   3. No hacer nada si solo hay consultas pendientes
+ *
+ * Operación:
+ *   - Evalúa todas las peticiones pendientes en otros nodos
+ *   - Calcula la prioridad máxima entre esos nodos
+ *   - Compara con la prioridad máxima local
+ *   - Envía testigo o lo retiene con bandera de turno activo
+ *
+ * @param mi_id ID del nodo maestro actual (1-based)
+ * @param mem Puntero a la estructura de memoria compartida
+ *
+ * @note Función que implementa la lógica de cambio de nodo maestro y gestión de prioridades
+ */
+void decidir_siguiente_turno_master(int mi_id, memoria_nodo *mem){
     calcular_prioridad_maxima(mem);
     sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
     mem->prioridad_maxima_otro_nodo = 0;
@@ -537,6 +571,80 @@ void gestionar_fin_consultas_nodo_master(int mi_id, memoria_nodo *mem){
         }
 
     }
+}
+
+void gestionar_fin_consulta(int mi_id, memoria_nodo *mem){
+    sem_wait(&(mem->sem_nodo_master));
+    if(mem->nodo_master == 1){
+        //SOY EL NODO MAESTRO. TOCA COMPROBAR SI TENGO TODAS LAS COPIAS.
+        sem_post(&(mem->sem_nodo_master));
+        #ifdef __DEBUG
+        printf("DEBUG: Soy el nodo maestro\n");
+        #endif
+        sem_wait(&(mem->sem_testigos_recogidos));
+        mem->testigos_recogidos = 1;
+        sem_post(&(mem->sem_testigos_recogidos));
+        sem_wait(&(mem->sem_nodos_con_consultas));
+        mem->nodos_con_consultas[mi_id-1] = 0;
+        sem_post(&(mem->sem_nodos_con_consultas));
+
+        for(int i=0; i< mem->num_nodos; i++){
+            sem_wait(&(mem->sem_nodos_con_consultas));
+            if(mem->nodos_con_consultas[i] == 1){
+                sem_post(&(mem->sem_nodos_con_consultas));
+                sem_wait(&(mem->sem_testigos_recogidos));
+                mem->testigos_recogidos = 0;    //FALSE
+                sem_post(&(mem->sem_testigos_recogidos));
+                break;
+            }else{
+                sem_post(&(mem->sem_nodos_con_consultas));
+            }
+        }
+        sem_wait(&(mem->sem_testigos_recogidos));
+        if(mem->testigos_recogidos == 1){
+            mem->testigos_recogidos = 0;    //FALSE
+            sem_post(&(mem->sem_testigos_recogidos));
+            decidir_siguiente_turno_master(mi_id, mem);
+        }else{
+            sem_post(&(mem->sem_testigos_recogidos));
+        }
+
+    }else{
+        //No soy el nodo maestro.
+        sem_post(&(mem->sem_nodo_master));
+        #ifdef __DEBUG
+        printf("DEBUG: No soy el nodo maestro\n");
+        #endif
+
+        msgbuf_mensaje mensaje_testigo_falso;
+        mensaje_testigo_falso.msg_type = (long)4; // DEVOLVER_TESTIGO_COPIA
+        mensaje_testigo_falso.id = mi_id;
+        sem_wait(&(mem->sem_id_nodo_master));
+        mensaje_testigo_falso.id_nodo_master = mem->id_nodo_master;
+        sem_post(&(mem->sem_id_nodo_master));
+
+        sem_wait(&(mem->sem_buzones_nodos));
+        if(msgsnd(mem->buzones_nodos[mensaje_testigo_falso.id_nodo_master-1], &mensaje_testigo_falso, sizeof(mensaje_testigo_falso) - sizeof(long), 0) == -1){
+            perror("Error al enviar el testigo falso de devoluciÃ³n");
+        }
+        sem_post(&(mem->sem_buzones_nodos));
+    }
+    
+    sem_wait(&(mem->sem_atendidas));
+    sem_wait(&(mem->sem_peticiones));
+    mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
+
+    sem_post(&(mem->sem_atendidas));
+    sem_post(&(mem->sem_peticiones));
+
+    sem_wait(&(mem->sem_contador_cons_pendientes));
+    if(mem->contador_cons_pendientes > 0){
+        sem_post(&(mem->sem_contador_cons_pendientes));
+        send_peticiones(mi_id, mem, CONSULTA);
+    }else{
+        sem_post(&(mem->sem_contador_cons_pendientes));
+    }
+    return;
 }
 
 #endif
