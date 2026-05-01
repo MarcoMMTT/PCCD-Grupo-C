@@ -323,7 +323,7 @@ void send_testigo(int mi_id, memoria_nodo *mem){
 
         sem_wait(&(mem->sem_buzones_nodos));
         if(msgsnd(
-            mem->buzones_nodos[id_buscar-1], &mensaje_testigo, sizeof(msgbuf_mensaje) - sizeof(long), 0) == -1){
+            mem->buzones_nodos[id_buscar-1], &mensaje_testigo, sizeof(mensaje_testigo) - sizeof(long), 0) == -1){
             perror("Error al enviar el testigo");
         }
         sem_post(&(mem->sem_buzones_nodos));
@@ -337,6 +337,43 @@ void send_testigo(int mi_id, memoria_nodo *mem){
         #endif
     }
 
+}
+
+void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
+
+    struct msgbuf_mensaje mensaje_peticion;
+    mensaje_peticion.msg_type = (long)1; // SOLICITUD
+    mensaje_peticion.id = mi_id;
+    mensaje_peticion.prioridad = prioridad;
+
+    sem_wait(&(mem->sem_mi_peticion));
+    mem->mi_peticion++;
+
+    sem_wait(&(mem->sem_peticiones));
+    mem->peticiones[mi_id-1][prioridad-1] = mem->mi_peticion;
+    sem_post(&(mem->sem_peticiones));
+    
+    mensaje_peticion.peticion = mem->mi_peticion;
+    sem_post(&(mem->sem_mi_peticion));
+
+    #ifdef __DEBUG
+    printf("[NODO %d] Enviando mensaje de tipo %ld con petición: %i, con prioridad %d\n", mi_id, mensaje_peticion.msg_type, mensaje_peticion.peticion, mensaje_peticion.prioridad);
+    #endif
+
+    for(int i = 0;i < mem->num_nodos; i++){
+        if(i != mi_id - 1){
+            sem_wait(&(mem->sem_buzones_nodos));
+            if(msgsnd(mem->buzones_nodos[i], &mensaje_peticion, sizeof(mensaje_peticion) - sizeof(long), 0) == -1){
+                    sem_post(&(mem->sem_buzones_nodos));
+                    perror("Error al enviar la petición");
+                    #ifdef __DEBUG
+                    printf("DEBUG: Error al enviar la petición del nodo %d al nodo %d\n", mi_id, i+1);
+                    #endif
+            }else{
+            sem_post(&(mem->sem_buzones_nodos));
+            }
+        }
+    }
 }
 
 #endif
