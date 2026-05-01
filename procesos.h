@@ -212,7 +212,7 @@ void calcular_prioridad_maxima(memoria_nodo *mem){
     sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_wait(&(mem->sem_prioridad_maxima));
     #ifdef __DEBUG
-        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",me->prioridad_maxima, me->prioridad_max_otro_nodo);
+        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",me->prioridad_maxima, me->prioridad_maxima_otro_nodo);
     #endif
     sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_post(&(mem->sem_prioridad_maxima));
@@ -373,6 +373,133 @@ void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
             sem_post(&(mem->sem_buzones_nodos));
             }
         }
+    }
+}
+
+void send_testigo_falso(int mi_id, memoria_nodo *mem){
+    struct msgbuf_mensaje mensaje_testigo_falso;
+    mensaje_testigo_falso.msg_type = (long)3; // ENVIAR_TESTIGO_COPIA
+    mensaje_testigo_falso.id = mi_id;
+    mensaje_testigo_falso.id_nodo_master = mi_id;
+    sem_wait(&(mem->sem_atendidas));
+    memcpy(mensaje_testigo_falso.atendidas, mem->atendidas, sizeof(mem->atendidas));
+    sem_post(&(mem->sem_atendidas));
+
+    for(int i=0; i < mem->num_nodos; i++){
+        if (i == mi_id -1){
+            continue;
+        }
+        
+        sem_wait(&(mem->sem_peticiones));
+        sem_wait(&(mem->sem_atendidas));
+        
+        if(mem->peticiones[i][CONSULTA -1] > mem->atendidas[i][CONSULTA -1]){
+            mem->atendidas[i][CONSULTA -1] = mem->peticiones[i][CONSULTA -1];
+            sem_post(&(mem->sem_atendidas));
+            sem_post(&(mem->sem_peticiones));
+
+            sem_wait(&(mem->sem_buzones_nodos));
+            if(msgsnd(mem->buzones_nodos[i], &mensaje_testigo_falso, sizeof(mensaje_testigo_falso) - sizeof(long), 0) == -1){
+                perror("Error al enviar el testigo falso");
+            }
+            sem_post(&(mem->sem_buzones_nodos));
+                #ifdef __DEBUG
+            printf("Testigo falso enviado desde nodo %d al nodo %d\n", mi_id, i+1);
+                #endif
+        }else{
+            sem_post(&(mem->sem_atendidas));
+            sem_post(&(mem->sem_peticiones));
+        }
+    }
+}
+
+void gestionar_fin_consultas_nodo_master(int mi_id, memoria_nodo *mem){
+    calcular_prioridad_maxima(mem);
+    sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+    mem->prioridad_maxima_otro_nodo = 0;
+    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
+    for(int i=0; i < mem->num_nodos; i++){
+        if(i == mi_id -1){
+            continue;
+        }
+        for(int j=0; j < P; j++){
+            sem_wait(&(mem->sem_peticiones));
+            sem_wait(&(mem->sem_atendidas));
+            
+            if(mem->peticiones[i][j] > mem->atendidas[i][j]){
+                sem_post(&(mem->sem_atendidas));
+                sem_post(&(mem->sem_peticiones));
+                sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+                mem->prioridad_maxima_otro_nodo = max(mem->prioridad_maxima_otro_nodo, j+1);
+
+                #ifdef __DEBUG
+                printf("DEBUG: Prioridad máxima otro nodo %d\n", mem->prioridad_maxima_otro_nodo);
+                #endif
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                
+            }else{
+                sem_post(&(mem->sem_atendidas));
+                sem_post(&(mem->sem_peticiones));
+            }
+        }
+    }
+
+    sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+    sem_wait(&(mem->sem_prioridad_maxima));
+    
+    if((mem->prioridad_maxima_otro_nodo > mem->prioridad_maxima) && mem->prioridad_maxima_otro_nodo != CONSULTA){
+        sem_post(&(mem->sem_prioridad_maxima));
+        sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+        send_testigo(mi_id, mem);
+    }else{
+        sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+        if(mem->prioridad_maxima == ANUL){
+            sem_post(&(mem->sem_prioridad_maxima));
+            #ifdef __DEBUG
+            printf("DEBUG: El nodo %d se queda el testigo para atender peticiones de prioridad ANULACION\n", mi_id);
+            #endif
+            sem_wait(&(mem->sem_turno));
+            mem->turno = 1;
+            sem_post(&(mem->sem_turno));
+            sem_wait(&(mem->sem_turno_ANUL));
+            mem->turno_ANUL = 1;
+            sem_post(&(mem->sem_turno_ANUL));
+            sem_post(&(mem->sem_anul_pend));
+
+        }else if(mem->prioridad_maxima == PAG_ADM){
+            sem_post(&(mem->sem_prioridad_maxima));
+            #ifdef __DEBUG
+            printf("DEBUG: El nodo %d se queda el testigo para atender peticiones de prioridad PAGOS/ADMINISTRACION\n", mi_id);
+            #endif
+            sem_wait(&(mem->sem_turno));
+            mem->turno = 1;
+            sem_post(&(mem->sem_turno));
+            sem_wait(&(mem->sem_turno_PAG_ADM));
+            mem->turno_PAG_ADM = 1;
+            sem_post(&(mem->sem_turno_PAG_ADM));
+            sem_post(&(mem->sem_pag_adm_pend));
+        
+        }else if(mem->prioridad_maxima == RESERVA){
+            sem_post(&(mem->sem_prioridad_maxima));
+            #ifdef __DEBUG
+            printf("DEBUG: El nodo %d se queda el testigo para atender peticiones de prioridad RESERVA\n", mi_id);
+            #endif
+            sem_wait(&(mem->sem_turno));
+            mem->turno = 1;
+            sem_post(&(mem->sem_turno));
+            sem_wait(&(mem->sem_turno_RES));
+            mem->turno_RES = 1;
+            sem_post(&(mem->sem_turno_RES));
+            sem_post(&(mem->sem_res_pend));
+        
+        }else{
+            sem_post(&(mem->sem_prioridad_maxima));
+            #ifdef __DEBUG
+            printf("DEBUG: No se hace nada\n");
+            #endif
+        }
+
     }
 }
 
