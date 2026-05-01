@@ -413,7 +413,7 @@ void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
 }
 
 void send_testigo_falso(int mi_id, memoria_nodo *mem){
-    struct msgbuf_mensaje mensaje_testigo_falso;
+    msgbuf_mensaje mensaje_testigo_falso;
     mensaje_testigo_falso.msg_type = (long)3; // ENVIAR_TESTIGO_COPIA
     mensaje_testigo_falso.id = mi_id;
     mensaje_testigo_falso.id_nodo_master = mi_id;
