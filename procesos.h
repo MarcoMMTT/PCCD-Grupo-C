@@ -218,5 +218,125 @@ void calcular_prioridad_maxima(memoria_nodo *mem){
     sem_post(&(mem->sem_prioridad_maxima));
 }
 
+void send_testigo(int mi_id, memoria_nodo *mem){
+    int i=0, j=0;
+    int id_buscar;
+    int id_inicio;
+    int encontrado = 0;
+
+    struct msgbuf_mensaje mensaje_testigo;
+    mensaje_testigo.msg_type = (long)2; // TESTIGO_MAESTRO
+    mensaje_testigo.id = mi_id;
+
+    if(mi_id + 1 > mem->num_nodos){
+        id_buscar = 1;
+    }else{
+        id_buscar = mi_id + 1;
+    }
+    id_inicio = id_buscar;
+
+    // Reiniciamos el contador de retención del testigo
+    sem_wait(&(mem->sem_contador_procesos_max_SC));
+    mem->contador_procesos_max_SC = 0;
+    sem_post(&(mem->sem_contador_procesos_max_SC));
+
+    /*
+     * Si no quedan procesos pendientes en el nodo se actualiza 
+     * la petición de esa prioridad como atendida
+    */
+
+    sem_wait(&(mem->sem_atendidas));
+    sem_wait(&(mem->sem_peticiones));
+
+    sem_wait(&(mem->sem_contador_anul_pendientes));
+    if(mem->contador_anul_pendientes == 0){
+        mem->atendidas[mi_id-1][ANUL-1] = mem->peticiones[mi_id-1][ANUL-1];
+    }
+    sem_post(&(mem->sem_contador_anul_pendientes));
+
+    sem_wait(&(mem->sem_contador_pag_adm_pendientes));
+    if(mem->contador_pag_adm_pendientes == 0){
+        mem->atendidas[mi_id-1][PAG_ADM-1] = mem->peticiones[mi_id-1][PAG_ADM-1];
+    }
+    sem_post(&(mem->sem_contador_pag_adm_pendientes));
+
+    sem_wait(&(mem->sem_contador_res_pendientes));
+    if(mem->contador_res_pendientes == 0){
+        mem->atendidas[mi_id-1][RESERVA-1] = mem->peticiones[mi_id-1][RESERVA-1];
+    }
+    sem_post(&(mem->sem_contador_res_pendientes));
+
+    sem_wait(&(mem->sem_contador_cons_pendientes));
+    if(mem->contador_cons_pendientes == 0){
+        mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
+    }
+    sem_post(&(mem->sem_contador_cons_pendientes));
+
+    sem_post(&(mem->sem_atendidas));
+    sem_post(&(mem->sem_peticiones));
+
+    /*
+     * Buscar destinatario del testigo
+     * Se recorren las prio de mayor a menor.
+    */
+
+    for(j= P -1; j>=0; j--){
+        id_buscar = id_inicio;
+        for(i=0; i < mem->num_nodos; i++){
+            if(id_buscar > mem->num_nodos){
+                id_buscar = 1;
+            }
+            if(id_buscar != mi_id){
+                sem_wait(&(mem->sem_peticiones));
+                sem_wait(&(mem->sem_atendidas));
+                
+                if(mem->peticiones[id_buscar-1][j] > mem->atendidas[id_buscar-1][j]){
+                    sem_post(&(mem->sem_atendidas));
+                    sem_post(&(mem->sem_peticiones));
+                    encontrado = 1;
+
+                    sem_wait(&(mem->sem_nodo_master));
+                    mem-> nodo_master = 0; // Ya no es nodo maestro
+                    sem_post(&(mem->sem_nodo_master));
+                    break;
+                }
+                sem_post(&(mem->sem_atendidas));
+                sem_post(&(mem->sem_peticiones));
+            }
+            id_buscar++;
+        }
+        if(encontrado){
+            break;
+        }
+
+    }
+
+    if(encontrado){
+        mensaje_testigo.id = id_buscar;
+        sem_wait(&(mem->sem_atendidas));
+        memcpy(mensaje_testigo.atendidas, mem->atendidas, sizeof(mem->atendidas));
+        sem_post(&(mem->sem_atendidas));
+
+        sem_wait(&(mem->sem_testigo));
+        mem->testigo = false;
+        sem_post(&(mem->sem_testigo));
+
+        sem_wait(&(mem->sem_buzones_nodos));
+        if(msgsnd(
+            mem->buzones_nodos[id_buscar-1], &mensaje_testigo, sizeof(msgbuf_mensaje) - sizeof(long), 0) == -1){
+            perror("Error al enviar el testigo");
+        }
+        sem_post(&(mem->sem_buzones_nodos));
+                #ifdef __DEBUG
+        printf("Testigo enviado desde nodo %d al nodo %d\n", mi_id, id_buscar);
+        #endif
+
+    } else {
+        #ifdef __DEBUG
+        printf("DEBUG: No hay ningún nodo esperando el testigo.\n");
+        #endif
+    }
+
+}
 
 #endif
