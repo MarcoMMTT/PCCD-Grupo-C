@@ -20,7 +20,6 @@
 #include <sys/time.h>
 #include <sys/msg.h>
 #include <sys/types.h>
-#include <stdbool.h> // Para false/true
 
 
 //----------------------------------------------------- {Ifdefs} ----------------------------------------
@@ -222,7 +221,7 @@ void calcular_prioridad_maxima(memoria_nodo *mem){
     sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_wait(&(mem->sem_prioridad_maxima));
     #ifdef __DEBUG
-        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",me->prioridad_maxima, mem->prioridad_max_otro_nodo);
+        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",mem->prioridad_maxima, mem->prioridad_max_otro_nodo);
     #endif
     sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_post(&(mem->sem_prioridad_maxima));
@@ -337,7 +336,7 @@ void send_testigo(int mi_id, memoria_nodo *mem){
         sem_post(&(mem->sem_atendidas));
 
         sem_wait(&(mem->sem_testigo));
-        mem->testigo = false;
+        mem->testigo = 0;
         sem_post(&(mem->sem_testigo));
 
         sem_wait(&(mem->sem_buzones_nodos));
@@ -569,10 +568,29 @@ void decidir_siguiente_turno_master(int mi_id, memoria_nodo *mem){
             printf("DEBUG: No se hace nada\n");
             #endif
         }
-
     }
 }
 
+/**
+ * @brief Gestiona la salida de un proceso de consulta de la sección crítica.
+ *
+ * Esta función coordina la finalización de una consulta en un sistema donde las consultas
+ * pueden ejecutarse de forma concurrente en múltiples nodos (lectores concurrentes).
+ * 
+ * Si el nodo es el Maestro:
+ *   - Verifica si ha recuperado todos los "testigos copia" de los otros nodos que estaban consultando.
+ *   - Si todos los testigos han vuelto, procede a decidir el siguiente turno (priorizando escritores).
+ * 
+ * Si el nodo NO es el Maestro:
+ *   - Envía un mensaje de tipo 4 (RECIBIR_TESTIGO_COPIA) de vuelta al nodo maestro para notificar
+ *     que ha terminado su lectura.
+ * 
+ * En ambos casos, actualiza la matriz de peticiones atendidas y, si existen más consultas 
+ * locales pendientes, solicita una nueva entrada a la sección crítica.
+ *
+ * @param mi_id ID del nodo actual (1-based)
+ * @param mem Puntero a la estructura de memoria compartida del nodo
+ */
 void gestionar_fin_consulta(int mi_id, memoria_nodo *mem){
     sem_wait(&(mem->sem_nodo_master));
     if(mem->nodo_master == 1){
@@ -625,7 +643,7 @@ void gestionar_fin_consulta(int mi_id, memoria_nodo *mem){
 
         sem_wait(&(mem->sem_buzones_nodos));
         if(msgsnd(mem->buzones_nodos[mensaje_testigo_falso.id_nodo_master-1], &mensaje_testigo_falso, sizeof(mensaje_testigo_falso) - sizeof(long), 0) == -1){
-            perror("Error al enviar el testigo falso de devoluciÃ³n");
+            perror("Error al enviar el testigo falso de devolución");
         }
         sem_post(&(mem->sem_buzones_nodos));
     }
