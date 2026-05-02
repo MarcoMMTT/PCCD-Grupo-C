@@ -65,7 +65,7 @@ int main (int argc, char* argv[]){
             //Enviamos peticiones
             send_peticiones(mi_id, mem, ANUL);
 
-            //Acabamos con el envio de peticiones, ahora espera
+            //Acabamos con el envio de peticiones
             sem_wait(&mem->sem_anul_pendientes);
 
         }else{
