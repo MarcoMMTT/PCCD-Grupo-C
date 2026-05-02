@@ -65,14 +65,23 @@ int main(int argc, char* argv[]){
             // No pido el testigo
 
             sem_post(&mem->sem_testigo);
-            sem_post(&mem->sem_d);
+            sem_post(&mem->sem_turno_CONS);
+            sem_post(&mem->sem_turno);
+            sem_post(&mem->sem_contador_cons_pendientes);
 
-            if (!me->turno_C){
+            #ifdef __PRINT_PROCESO
+            printf("El proceso de Consulta no pide el testigo.\n");
+            #endif
 
-                // Hay alguien dentro o no tengo el testigo
+            sem_wait(&mem->sem_testigo);
+            sem_wait(&mem->sem_turno_CONS);
+
+            if ((!(mem->testigo) && !mem->turno_CONS) || (!mem->consultas_dentro)){
+
+                // No hay nadie dentro ni tengo el testigo
 
                 sem_post(&mem->sem_testigo);
-                sem_post(&mem->sem_dentro);
+                sem_post(&mem->sem_turno_CONS);
 
                 sem_wait(&mem->sem_contador_cons_pendientes);
 
@@ -123,11 +132,91 @@ int main(int argc, char* argv[]){
 
         }else{
 
-            // No hay dentro
+            // No hay nadie dentro
 
             sem_post(&mem->sem_testigo);
-            sem_post(&mem->sem_dentro);
+            sem_post(&mem->sem_turno_CONS);
 
         }
+
+        // SECCION CRITICA
+
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Consulta accede a la SC.\n");
+        #endif
+
+        gettimeofday(&timeSC, NULL);
+
+        sem_wait(&mem->sem_consultas_dentro);
+        mem->consultas_dentro++;
+        sem_post(&mem->sem_consultas_dentro);
+
+        sleep(mem->tiempo_SC);
+
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Consulta sale de la SC.\n");
+        #endif
+
+        gettimeofday(&timeFinSC, NULL);
+
+        sem_wait(&mem->sem_contador_cons_pendientes);
+        mem->contador_cons_pendientes--;
+        sem_post(&mem->sem_contador_cons_pendientes);
+
+        sem_wait(&mem->sem_turno_CONS);
+        sem_wait(&mem->sem_contador_cons_pendientes);
+        sem_wait(&mem->sem_consultas_dentro);
+
+        if((!mem->turno_CONS && mem->consultas_dentro) || mem->contador_cons_pendientes == 0){
+
+            sem_post(&mem->sem_turno_CONS);
+            sem_post(&mem->sem_contador_cons_pendientes);
+            sem_post(&mem->sem_consultas_dentro);
+
+            #ifdef __PRINT_PROCESO
+            printf("Este es el último proceso de Consulta y envía el testigo.\n");
+            #endif
+
+            sem_wait(&mem->sem_dentro);
+            mem->dentro = 0;
+            sem_post(&mem->sem_dentro);
+
+            sem_wait(&mem->sem_turno_CONS);
+            mem->turno_CONS = 0;
+            sem_post(&mem->sem_turno_CONS);
+
+            sem_wait(&mem->sem_turno);
+            mem->turno = 0;
+            sem_post(&mem->sem_turno);
+
+            send_peticiones(mi_id, mem);
+
+            #ifdef __PRINT_PROCESO
+            printf("Finaliza el proceso de Consulta.\n");
+            #endif
+
+        }else{
+
+            sem_post(&mem->sem_turno_CONS);
+            sem_post(&mem->sem_contador_cons_pendientes);
+            sem_post(&mem->sem_consultas_dentro);
+
+            #ifdef __PRINT_PROCESO
+            printf("Finaliza el proceso de Consulta.\n");
+            #endif
+
+        }
+
+        gettimeofday(&timeFin, NULL);
+
+        int secondsSC = timeSC.tv_sec - timeInicio.tv_sec;
+        int microsSC = secondsSC*1000000 + timeSC.tv_usec - timeInicio.tv_usec;
+
+        int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
+        int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
+
+        fprintf(ficheroSalida, "[%d,Consultas,%d,%d]", mi_id, microsSC, microsSalida);
+
+        return 0;
 
 }
