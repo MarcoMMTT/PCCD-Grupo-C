@@ -85,7 +85,7 @@ int main(int argc, char*argv[]){
             sem_wait(&mem->sem_dentro);
             sem_wait(&mem->sem_testigo);
             
-            if(mem->dentro || mem->testigo){
+            if(mem->dentro || !mem->testigo){
 
                 // Hay alguien dentro o no se tiene el testigo
 
