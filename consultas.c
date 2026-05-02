@@ -5,7 +5,7 @@ int main(int argc, char* argv[]){
 
     if(argc != 2){
         printf("Uso correcto: ./consultas id_nodo \n");
-        exit_failure();
+        exit(EXIT_FAILURE);
     }
 
     struct timeval timeInicio, timeSC, timeFinSC, timeFin;
@@ -32,21 +32,21 @@ int main(int argc, char* argv[]){
 
     gettimeofday(&timeInicio, NULL);
 
-    sem_wait(&mem->sem_contador_cons_pendientes);
+    sem_wait(&(mem->sem_contador_cons_pendientes));
     mem->contador_cons_pendientes++;
-    sem_wait(&mem->sem_testigo);
-    sem_wait(&mem->sem_turno_CONS);
-    sem_wait(&mem->sem_turno);
+    sem_wait(&(mem->sem_testigo));
+    sem_wait(&(mem->sem_turno_CONS));
+    sem_wait(&(mem->sem_turno));
 
     if ((!mem->testigo && mem->contador_cons_pendientes == 1) ||
         (mem->testigo && mem->contador_cons_pendientes == 1 && !mem->turno_CONS && mem->turno)){
 
             // Pido el testigo
 
-            sem_post(&mem->sem_testigo);
-            sem_post(&mem->sem_turno_CONS);
-            sem_post(&mem->sem_turno);
-            sem_post(&mem->sem_contador_cons_pendientes);
+            sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_turno_CONS));
+            sem_post(&(mem->sem_turno));
+            sem_post(&(mem->sem_contador_cons_pendientes));
 
             calcular_prioridad_maxima(mem);
 
@@ -58,75 +58,75 @@ int main(int argc, char* argv[]){
             send_peticiones(mi_id, mem, CONSULTA);
 
             // Acaban de enviarse las peticiones
-            sem_wait(&mem->sem_cons_pend);
+            sem_wait(&(mem->sem_cons_pend));
 
         }else{
 
             // No pido el testigo
 
-            sem_post(&mem->sem_testigo);
-            sem_post(&mem->sem_turno_CONS);
-            sem_post(&mem->sem_turno);
-            sem_post(&mem->sem_contador_cons_pendientes);
+            sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_turno_CONS));
+            sem_post(&(mem->sem_turno));
+            sem_post(&(mem->sem_contador_cons_pendientes));
 
             #ifdef __PRINT_PROCESO
             printf("El proceso de Consulta no pide el testigo.\n");
             #endif
 
-            sem_wait(&mem->sem_testigo);
-            sem_wait(&mem->sem_turno_CONS);
+            sem_wait(&(mem->sem_testigo));
+            sem_wait(&(mem->sem_turno_CONS));
 
             if ((!(mem->testigo) && !mem->turno_CONS) || (!mem->consultas_dentro)){
 
                 // No hay nadie dentro ni tengo el testigo
 
-                sem_post(&mem->sem_testigo);
-                sem_post(&mem->sem_turno_CONS);
+                sem_post(&(mem->sem_testigo));
+                sem_post(&(mem->sem_turno_CONS));
 
-                sem_wait(&mem->sem_contador_cons_pendientes);
+                sem_wait(&(mem->sem_contador_cons_pendientes));
 
                 if(mem->testigo && mem->prioridad_maxima == CONSULTA){
 
-                    sem_post(&mem->sem_prioridad_maxima);
+                    sem_post(&(mem->sem_prioridad_maxima));
                     
-                    sem_wait(&mem->sem_turno_CONS);
+                    sem_wait(&(mem->sem_turno_CONS));
                     mem->turno_CONS = 1;
-                    sem_post(&mem->sem_turno_CONS);
+                    sem_post(&(mem->sem_turno_CONS));
 
-                    sem_wait(&mem->sem_turno);
+                    sem_wait(&(mem->sem_turno));
                     mem->turno = 1;
-                    sem_post(&mem->sem_turno);
+                    sem_post(&(mem->sem_turno));
 
-                    sem_wait(&mem->sem_dentro);
+                    sem_wait(&(mem->sem_dentro));
                     mem->dentro = 1;
-                    sem_post(&mem->sem_dentro);
+                    sem_post(&(mem->sem_dentro));
 
-                    sem_wait(&mem->sem_nodos_con_consultas);
+                    sem_wait(&(mem->sem_nodos_con_consultas));
                     mem->nodos_con_consultas[mi_id - 1] = 1;
-                    sem_post(&mme->sem_nodos_con_consultas);
+                    sem_post(&(mem->sem_nodos_con_consultas));
 
                 }else{
 
-                    sem_post(&mem->sem_prioridad_maxima);
-                    sem_post(&mem->sem_testigo);
+                    sem_post(&(mem->sem_prioridad_maxima));
+                    sem_post(&(mem->sem_testigo));
                     
                     #ifdef __PRINT_PROCESO
                     printf("El proceso de Consulta tiene que esperar.\n");
                     #endif
 
-                    sem_wait(&mem->sem_cons_pend);
+                    sem_wait(&(mem->sem_cons_pend));
 
                 }
 
             }else{
 
-                sem_post(&mem->sem_contador_cons_pendientes);
+                sem_post(&(mem->sem_contador_cons_pendientes));
 
                 #ifdef __PRINT_PROCESO
                 printf("El proceso de Consulta tiene que esperar.\n");
                 #endif
 
-                sem_wait(&mem->sem_cons_pend);
+                sem_wait(&(mem->sem_cons_pend));
 
             }
 
@@ -134,8 +134,8 @@ int main(int argc, char* argv[]){
 
             // No hay nadie dentro
 
-            sem_post(&mem->sem_testigo);
-            sem_post(&mem->sem_turno_CONS);
+            sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_turno_CONS));
 
         }
 
@@ -147,9 +147,9 @@ int main(int argc, char* argv[]){
 
         gettimeofday(&timeSC, NULL);
 
-        sem_wait(&mem->sem_consultas_dentro);
+        sem_wait(&(mem->sem_consultas_dentro));
         mem->consultas_dentro++;
-        sem_post(&mem->sem_consultas_dentro);
+        sem_post(&(mem->sem_consultas_dentro));
 
         sleep(mem->tiempo_SC);
 
@@ -159,35 +159,35 @@ int main(int argc, char* argv[]){
 
         gettimeofday(&timeFinSC, NULL);
 
-        sem_wait(&mem->sem_contador_cons_pendientes);
+        sem_wait(&(mem->sem_contador_cons_pendientes));
         mem->contador_cons_pendientes--;
-        sem_post(&mem->sem_contador_cons_pendientes);
+        sem_post(&(mem->sem_contador_cons_pendientes));
 
-        sem_wait(&mem->sem_turno_CONS);
-        sem_wait(&mem->sem_contador_cons_pendientes);
-        sem_wait(&mem->sem_consultas_dentro);
+        sem_wait(&(mem->sem_turno_CONS));
+        sem_wait(&(mem->sem_contador_cons_pendientes));
+        sem_wait(&(mem->sem_consultas_dentro));
 
         if((!mem->turno_CONS && mem->consultas_dentro) || mem->contador_cons_pendientes == 0){
 
-            sem_post(&mem->sem_turno_CONS);
-            sem_post(&mem->sem_contador_cons_pendientes);
-            sem_post(&mem->sem_consultas_dentro);
+            sem_post(&(mem->sem_turno_CONS));
+            sem_post(&(mem->sem_contador_cons_pendientes));
+            sem_post(&(mem->sem_consultas_dentro));
 
             #ifdef __PRINT_PROCESO
             printf("Este es el último proceso de Consulta y envía el testigo.\n");
             #endif
 
-            sem_wait(&mem->sem_dentro);
+            sem_wait(&(mem->sem_dentro));
             mem->dentro = 0;
-            sem_post(&mem->sem_dentro);
+            sem_post(&(mem->sem_dentro));
 
-            sem_wait(&mem->sem_turno_CONS);
+            sem_wait(&(mem->sem_turno_CONS));
             mem->turno_CONS = 0;
-            sem_post(&mem->sem_turno_CONS);
+            sem_post(&(mem->sem_turno_CONS));
 
-            sem_wait(&mem->sem_turno);
+            sem_wait(&(mem->sem_turno));
             mem->turno = 0;
-            sem_post(&mem->sem_turno);
+            sem_post(&(mem->sem_turno));
 
             send_peticiones(mi_id, mem);
 
@@ -197,9 +197,9 @@ int main(int argc, char* argv[]){
 
         }else{
 
-            sem_post(&mem->sem_turno_CONS);
-            sem_post(&mem->sem_contador_cons_pendientes);
-            sem_post(&mem->sem_consultas_dentro);
+            sem_post(&(mem->sem_turno_CONS));
+            sem_post(&(mem->sem_contador_cons_pendientes));
+            sem_post(&(mem->sem_consultas_dentro));
 
             #ifdef __PRINT_PROCESO
             printf("Finaliza el proceso de Consulta.\n");
@@ -215,7 +215,7 @@ int main(int argc, char* argv[]){
         int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
         int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
 
-        fprintf(ficheroSalida, "[%d,Consultas,%d,%d]", mi_id, microsSC, microsSalida);
+        fprintf(fichero_salida, "[%d,Consultas,%d,%d]", mi_id, microsSC, microsSalida);
 
         return 0;
 
