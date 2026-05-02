@@ -416,7 +416,7 @@ void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
 /**
  * @brief Envía testigos de copia a nodos que tienen consultas pendientes.
  *
- * Implementa el envío de testigos falsos (testigos de copia) a los nodos lectores
+ * Implementa el envío de testigos copia a los nodos lectores
  * que tienen consultas pendientes sin atender. Estos testigos permiten que múltiples
  * lectores accedan simultáneamente a la sección crítica sin necesidad del testigo maestro.
  * Solo actualiza y envía testigos a nodos con consultas pendientes.
@@ -426,13 +426,13 @@ void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
  *
  * @note Solo se envían testigos para consultas (lecturas), no para otras prioridades
  */
-void send_testigo_falso(int mi_id, memoria_nodo *mem){
-    msgbuf_mensaje mensaje_testigo_falso;
-    mensaje_testigo_falso.msg_type = (long)3; // ENVIAR_TESTIGO_COPIA
-    mensaje_testigo_falso.id = mi_id;
-    mensaje_testigo_falso.id_nodo_master = mi_id;
+void send_testigo_copia(int mi_id, memoria_nodo *mem){
+    msgbuf_mensaje mensaje_testigo_copia;
+    mensaje_testigo_copia.msg_type = (long)3; // ENVIAR_TESTIGO_COPIA
+    mensaje_testigo_copia.id = mi_id;
+    mensaje_testigo_copia.id_nodo_master = mi_id;
     sem_wait(&(mem->sem_atendidas));
-    memcpy(mensaje_testigo_falso.atendidas, mem->atendidas, sizeof(mem->atendidas));
+    memcpy(mensaje_testigo_copia.atendidas, mem->atendidas, sizeof(mem->atendidas));
     sem_post(&(mem->sem_atendidas));
 
     for(int i=0; i < mem->num_nodos; i++){
@@ -449,12 +449,12 @@ void send_testigo_falso(int mi_id, memoria_nodo *mem){
             sem_post(&(mem->sem_peticiones));
 
             sem_wait(&(mem->sem_buzones_nodos));
-            if(msgsnd(mem->buzones_nodos[i], &mensaje_testigo_falso, sizeof(mensaje_testigo_falso) - sizeof(long), 0) == -1){
-                perror("Error al enviar el testigo falso");
+            if(msgsnd(mem->buzones_nodos[i], &mensaje_testigo_copia, sizeof(mensaje_testigo_copia) - sizeof(long), 0) == -1){
+                perror("Error al enviar el testigo copia");
             }
             sem_post(&(mem->sem_buzones_nodos));
                 #ifdef __DEBUG
-            printf("Testigo falso enviado desde nodo %d al nodo %d\n", mi_id, i+1);
+            printf("Testigo copia enviado desde nodo %d al nodo %d\n", mi_id, i+1);
                 #endif
         }else{
             sem_post(&(mem->sem_atendidas));
@@ -635,16 +635,16 @@ void gestionar_fin_consulta(int mi_id, memoria_nodo *mem){
         printf("DEBUG: No soy el nodo maestro\n");
         #endif
 
-        msgbuf_mensaje mensaje_testigo_falso;
-        mensaje_testigo_falso.msg_type = (long)4; // DEVOLVER_TESTIGO_COPIA
-        mensaje_testigo_falso.id = mi_id;
+        msgbuf_mensaje mensaje_testigo_copia;
+        mensaje_testigo_copia.msg_type = (long)4; // DEVOLVER_TESTIGO_COPIA
+        mensaje_testigo_copia.id = mi_id;
         sem_wait(&(mem->sem_id_nodo_master));
-        mensaje_testigo_falso.id_nodo_master = mem->id_nodo_master;
+        mensaje_testigo_copia.id_nodo_master = mem->id_nodo_master;
         sem_post(&(mem->sem_id_nodo_master));
 
         sem_wait(&(mem->sem_buzones_nodos));
-        if(msgsnd(mem->buzones_nodos[mensaje_testigo_falso.id_nodo_master-1], &mensaje_testigo_falso, sizeof(mensaje_testigo_falso) - sizeof(long), 0) == -1){
-            perror("Error al enviar el testigo falso de devolución");
+        if(msgsnd(mem->buzones_nodos[mensaje_testigo_copia.id_nodo_master-1], &mensaje_testigo_copia, sizeof(copia) - sizeof(long), 0) == -1){
+            perror("Error al enviar el testigo copia de devolución");
         }
         sem_post(&(mem->sem_buzones_nodos));
     }
