@@ -643,7 +643,7 @@ void gestionar_fin_consulta(int mi_id, memoria_nodo *mem){
         sem_post(&(mem->sem_id_nodo_master));
 
         sem_wait(&(mem->sem_buzones_nodos));
-        if(msgsnd(mem->buzones_nodos[mensaje_testigo_copia.id_nodo_master-1], &mensaje_testigo_copia, sizeof(copia) - sizeof(long), 0) == -1){
+        if(msgsnd(mem->buzones_nodos[mensaje_testigo_copia.id_nodo_master-1], &mensaje_testigo_copia, sizeof(mensaje_testigo_copia) - sizeof(long), 0) == -1){
             perror("Error al enviar el testigo copia de devolución");
         }
         sem_post(&(mem->sem_buzones_nodos));

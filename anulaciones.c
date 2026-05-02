@@ -46,7 +46,7 @@ int main (int argc, char* argv[]){
 
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_ANUL));
-            sem_post(&(mem->sem_contador_procesos_SC));
+            sem_post(&(mem->sem_contador_procesos_max_SC));
             sem_post(&(mem->sem_turno));
             sem_post(&(mem->sem_contador_anul_pendientes));
 
@@ -66,7 +66,7 @@ int main (int argc, char* argv[]){
             send_peticiones(mi_id, mem, ANUL);
 
             //Acabamos con el envio de peticiones
-            sem_wait(&(mem->sem_anul_pendientes));
+            sem_wait(&(mem->sem_anul_pend));
 
         }else{
 
@@ -96,7 +96,7 @@ int main (int argc, char* argv[]){
                 printf("ANULACIONES --> Espero porque no tengo permiso.\n");
                 #endif
 
-                sem_wait(&(mem->sem_anul_pendientes));
+                sem_wait(&(mem->sem_anul_pend));
 
             }else{
 
@@ -347,14 +347,14 @@ int main (int argc, char* argv[]){
                             mem->nodo_master = 1;
                             sem_post(&(mem->sem_nodo_master));
 
-                            sem_wait(&(mem->sem_contador_pendientes));
+                            sem_wait(&(mem->sem_contador_cons_pendientes));
                             for(int i = 0; i < mem->contador_cons_pendientes; i++){
  
                                 sem_post(&(mem->sem_cons_pend));
 
                             }
 
-                            sem_post(&(mem->sem_contador_cons_pend));
+                            sem_post(&(mem->sem_contador_cons_pendientes));
 
                         }
 

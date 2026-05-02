@@ -1,5 +1,8 @@
 #include "procesos.h"
 
+#define EVITAR_RETENCION 2 // Número de procesos que pueden quedarse pendientes sin que se considere retención
+// PONERLO EN PROCESOS.H
+
 int main(int argc, char *argv[]){
     if(argc != 4){
         printf("La forma de ejecución correcta es %s [id nodo] [numNodos] [tiempoSC]\n", argv[0]);
@@ -179,6 +182,152 @@ int main(int argc, char *argv[]){
 
             break;
             case 2: // SE RECIBE EL TESTIGO MAESTRO
+
+            #ifdef PRINT_RX
+            printf("[RECEPTOR] Nodo %d ha recibido el testigo maestro del nodo %d\n", mi_id, mensaje_rx.id);
+            #endif
+            sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+            mem->prioridad_maxima_otro_nodo = 0;
+            sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
+
+            sem_wait(&(mem->sem_atendidas));
+            sem_wait(&(mem->sem_peticiones));
+            for(int i=0; i < mem->num_nodos; i++){
+                if(i == mi_id -1){
+                    continue;
+                }
+                for(int j=0; j < P; j++){
+                    mem->atendidas[i][j] = mensaje_rx.atendidas[i][j];
+                    if(mem->atendidas[i][j] < mem->peticiones[i][j]){
+                        sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+                        mem->prioridad_maxima_otro_nodo = max(mem->prioridad_maxima_otro_nodo, j+1);
+                        sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                    }
+                }
+            }
+            sem_post(&(mem->sem_atendidas));
+            sem_post(&(mem->sem_peticiones));   
+            calcular_prioridad_maxima(mem);
+            sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+            sem_wait(&(mem->sem_prioridad_maxima));
+            if(mem->prioridad_maxima_otro_nodo > mem->prioridad_maxima){
+                sem_post(&(mem->sem_prioridad_maxima));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                send_testigo(mi_id, mem);
+            }else{
+                sem_post(&(mem->sem_prioridad_maxima));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                sem_wait(&(mem->sem_nodo_master));
+                mem->nodo_master = 1;
+                sem_post(&(mem->sem_nodo_master));
+
+                sem_wait(&(mem->sem_contador_anul_pendientes));
+                if(mem->contador_anul_pendientes > 0){
+                    sem_post(&(mem->sem_contador_anul_pendientes));
+                    sem_wait(&(mem->sem_atendidas));
+                    sem_wait(&(mem->sem_peticiones));
+                    mem->atendidas[mi_id-1][ANUL-1] = mem->peticiones[mi_id-1][ANUL-1];
+                    sem_post(&(mem->sem_atendidas));
+                    sem_post(&(mem->sem_peticiones));
+
+                    sem_wait(&(mem->sem_contador_procesos_max_SC));
+                    sem_wait(&(mem->sem_contador_anul_pendientes));
+                    if(mem->contador_anul_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION > 0){
+                        sem_post(&(mem->sem_contador_anul_pendientes));
+                        sem_post(&(mem->sem_contador_procesos_max_SC));
+                        send_peticiones(mi_id, mem, ANUL);
+                    }else{
+                        sem_post(&(mem->sem_contador_anul_pendientes));
+                        sem_post(&(mem->sem_contador_procesos_max_SC));
+                    }
+                    sem_wait(&(mem->sem_turno_ANUL));
+                    mem->turno_ANUL = 1;
+                    sem_post(&(mem->sem_turno_ANUL));
+                    sem_wait(&(mem->sem_turno));
+                    mem->turno = 1;
+                    sem_post(&(mem->sem_turno));
+                    sem_post(&(mem->sem_anul_pend));
+                }else{
+                    sem_post(&(mem->sem_contador_anul_pendientes));
+                    sem_wait(&(mem->sem_contador_pag_adm_pendientes));
+                    if(mem->contador_pag_adm_pendientes > 0){
+                        sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                        sem_wait(&(mem->sem_atendidas));
+                        sem_wait(&(mem->sem_peticiones));
+                        mem->atendidas[mi_id-1][PAG_ADM-1] = mem->peticiones[mi_id-1][PAG_ADM-1];
+                        sem_post(&(mem->sem_atendidas));
+                        sem_post(&(mem->sem_peticiones));
+
+                        sem_wait(&(mem->sem_contador_procesos_max_SC));
+                        sem_wait(&(mem->sem_contador_pag_adm_pendientes));
+                        if(mem->contador_anul_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION > 0){
+                            sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                            sem_post(&(mem->sem_contador_procesos_max_SC));
+                            send_peticiones(mi_id, mem, PAG_ADM);
+                        }else{
+                            sem_post(&(mem->sem_contador_anul_pendientes));
+                            sem_post(&(mem->sem_contador_procesos_max_SC));
+                        }
+                        sem_wait(&(mem->sem_turno_PAG_ADM));
+                        mem->turno_PAG_ADM = 1;
+                        sem_post(&(mem->sem_turno_PAG_ADM));
+                        sem_wait(&(mem->sem_turno));
+                        mem->turno = 1;
+                        sem_post(&(mem->sem_turno));
+                        sem_post(&(mem->sem_pag_adm_pend));
+                    }else{
+                        sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                        sem_wait(&(mem->sem_contador_res_pendientes));
+                        if(mem->contador_res_pendientes > 0){
+                            sem_post(&(mem->sem_contador_res_pendientes));
+                            sem_wait(&(mem->sem_atendidas));
+                            sem_wait(&(mem->sem_peticiones));
+                            mem->atendidas[mi_id-1][RESERVA-1] = mem->peticiones[mi_id-1][RESERVA-1];
+                            sem_post(&(mem->sem_atendidas));
+                            sem_post(&(mem->sem_peticiones));
+
+                            sem_wait(&(mem->sem_contador_procesos_max_SC));
+                            sem_wait(&(mem->sem_contador_res_pendientes));
+                            if(mem->contador_res_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION > 0){
+                                sem_post(&(mem->sem_contador_res_pendientes));
+                                sem_post(&(mem->sem_contador_procesos_max_SC));
+                                send_peticiones(mi_id, mem, RESERVA);
+                            }else{
+                                sem_post(&(mem->sem_contador_res_pendientes));
+                                sem_post(&(mem->sem_contador_procesos_max_SC));
+                            }
+                            sem_wait(&(mem->sem_turno_RES));
+                            mem->turno_RES = 1;
+                            sem_post(&(mem->sem_turno_RES));
+                            sem_wait(&(mem->sem_turno));
+                            mem->turno = 1;
+                            sem_post(&(mem->sem_turno));
+                            sem_post(&(mem->sem_res_pend));
+                        }else{
+                            sem_post(&(mem->sem_contador_res_pendientes));
+                            sem_wait(&(mem->sem_atendidas));
+                            sem_wait(&(mem->sem_peticiones));
+                            mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
+                            sem_post(&(mem->sem_peticiones));
+                            sem_post(&(mem->sem_atendidas));
+
+                            sem_wait(&(mem->sem_turno_CONS));
+                            mem->turno_CONS = 1;
+                            sem_post(&(mem->sem_turno_CONS));
+                            sem_wait(&(mem->sem_turno));
+                            mem->turno = 1;
+                            sem_post(&(mem->sem_turno));
+                            sem_post(&(mem->sem_cons_pend));
+
+                        }
+                        
+                }
+
+            }
+            sem_wait(&(mem->sem_testigo));
+            mem->testigo = 1;
+            sem_post(&(mem->sem_testigo));
             break;
             case 3: // SE RECIBE UN TESTIGO COPIA PARA DAR ACCESO A LEER 
             break;
