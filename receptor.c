@@ -116,6 +116,17 @@ int main(int argc, char *argv[]){
         }
         switch(mensaje_rx.msg_type){
             case 1: // SE RECIBE UNA PETICION DEL TESTIGO
+            /* 
+            1. Actualiza peticiones[][].
+            2. Actualiza prioridad_maxima_otro_nodo.
+            3. Si la petición es CONSULTA:
+            - solo se manda copias si no hay prioridades superiores.
+            4. Si la petición es de escritor:
+            - si tiene el testigo y no está en consultas, puede enviar el testigo.
+            - si está en consultas, cierras turno_CONS para que no entren más consultas nuevas.
+            */
+
+
             #ifdef PRINT_RX
             printf("[RECEPTOR]Nodo %d ha recibido una petición (%d) del nodo %d con prioridad %d\n",mi_id, mensaje_rx.peticion, mensaje_rx.id, mensaje_rx.prioridad);
             #endif
@@ -125,6 +136,47 @@ int main(int argc, char *argv[]){
             sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
             mem->prioridad_maxima_otro_nodo = max(mem->prioridad_maxima_otro_nodo, mensaje_rx.prioridad);
             sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
+            if(mensaje_rx.prioridad == CONSULTA){
+                sem_wait(&mem->sem_prioridad_maxima);
+                sem_wait(&mem->sem_prioridad_maxima_otro_nodo);
+                sem_wait(&mem->sem_testigo);
+
+                if(mem->testigo == 1 && mem->prioridad_maxima_otro_nodo == CONSULTA && (mem->prioridad_maxima == CONSULTA || mem->prioridad_maxima == 0)) {
+                    sem_post(&mem->sem_testigo);
+                    sem_post(&mem->sem_prioridad_maxima_otro_nodo);
+                    sem_post(&mem->sem_prioridad_maxima);
+                    send_testigo_falso(mi_id,mem);
+                }else{
+                    sem_post(&mem->sem_testigo);
+                    sem_post(&mem->sem_prioridad_maxima_otro_nodo);
+                    sem_post(&mem->sem_prioridad_maxima);
+                }
+            } else{
+                sem_wait(&(mem->sem_testigo));
+                sem_wait(&(mem->sem_turno_CONS));
+                if(mem->testigo == 1 && mem->turno_CONS == 0){
+                    sem_post(&(mem->sem_turno_CONS));
+                    sem_post(&(mem->sem_testigo));
+                    sem_wait(&(mem->sem_prioridad_maxima));
+                    if(mem->prioridad_maxima == 0 || mensaje_rx.prioridad > mem->prioridad_maxima){
+                        sem_post(&(mem->sem_prioridad_maxima));
+                        send_testigo(mi_id, mem);
+                    }else{
+                        sem_post(&(mem->sem_prioridad_maxima));
+                    }
+                }else{ 
+                    sem_post(&(mem->sem_turno_CONS));
+                    sem_post(&(mem->sem_testigo));
+
+                    if(mensaje_rx.prioridad > CONSULTA){
+                        sem_wait(&(mem->sem_turno_CONS));
+                        mem->turno_CONS = 0;    //Se le cierra el grifo a los lectores
+                        sem_post(&(mem->sem_turno_CONS));
+                    }
+                }
+            }
+
 
             break;
             case 2: // SE RECIBE EL TESTIGO MAESTRO

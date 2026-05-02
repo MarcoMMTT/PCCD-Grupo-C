@@ -145,6 +145,11 @@ int main(int argc, char *argv[]){
             }
             n++;
         }
+
+
+
+
+        ///////////HACER RÁFAGAS DE PROCESOS.
     }
     printf("SIMULACIÓN COMENZADA\n");
     return 0;
