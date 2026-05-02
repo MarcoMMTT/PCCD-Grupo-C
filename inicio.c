@@ -60,8 +60,8 @@ int main(int argc, char *argv[]){
             printf("Variable desconocida: %s\n", variable);
         }
     }
-    if(numNodos <= 0 || numNodos > MAX_NODOS){
-        printf("Número de nodos inválido. Debe ser entre 1 y %d.\n", MAX_NODOS);
+    if(numNodos <= 0 || numNodos > NUM_MAX_NODOS){
+        printf("Número de nodos inválido. Debe ser entre 1 y %d.\n", NUM_MAX_NODOS);
         return 1;
     }
     if(tiempoSC <= 0){

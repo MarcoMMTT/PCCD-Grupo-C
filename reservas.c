@@ -1,6 +1,4 @@
-#include procesos.h
-#include <sys/time.h> 
-#include <stdlib.h>
+#include "procesos.h"
 
 
 int main (int argc, char *argv[]) {
