@@ -27,7 +27,7 @@ int main(int argc, char*argv[]){
     #endif
 
     #ifdef __PRINT_PROCESO
-    printf("Proceso de administracion.\n");
+    printf("Proceso de Administracion.\n");
     #endif
 
     gettimeofday(&timeInicio, NULL);
@@ -58,7 +58,7 @@ int main(int argc, char*argv[]){
             calcular_prioridad_maxima(mem);
 
             #ifdef __PRINT_PROCESO
-            printf("El proceso de administracion tiene que pedir el testigo.\n");
+            printf("El proceso de Administracion tiene que pedir el testigo.\n");
             #endif
 
             // Se envian las peticiones
@@ -79,7 +79,7 @@ int main(int argc, char*argv[]){
             sem_post(&mem->sem_contador_pag_adm_pendientes);
 
             #ifdef __PRINT_PROCESO
-            printf("El proceso de administracion no tiene que pedir el testigo.\n");
+            printf("El proceso de Administracion no tiene que pedir el testigo.\n");
             #endif
 
             sem_wait(&mem->sem_dentro);
@@ -92,7 +92,7 @@ int main(int argc, char*argv[]){
                 sem_post(&mem->sem_dentro);
                 sem_post(&mem->sem_testigo);
                 #ifdef __PRINT_PROCESO
-                printf("El proceso de administracion tiene que esperar ya que no tiene permiso.\n");
+                printf("El proceso de Administracion tiene que esperar ya que no tiene permiso.\n");
                 #endif
                 sem_wait(&mem->sem_pag_adm_pend);
 
@@ -122,7 +122,7 @@ int main(int argc, char*argv[]){
         // SECCION CRITICA
 
         #ifdef __PRINT_PROCESO
-        printf("Proceso de administracion accede a la SC.\n");
+        printf("Proceso de Administracion accede a la SC.\n");
         #endif
 
         gettimeofday(&timeSC, NULL);
@@ -142,7 +142,7 @@ int main(int argc, char*argv[]){
         sleep(mem->tiempo_SC);
 
         #ifdef __PRINT_PROCESO
-        printf("El proceso de administracion sale de la SC.\n");
+        printf("El proceso de Administracion sale de la SC.\n");
         #endif
 
         gettimeofday(&timeFinSC, NULL);
@@ -194,7 +194,7 @@ int main(int argc, char*argv[]){
                 if(mem->contador_procesos_max_SC >= EVITAR_RETENCION || (mem->contador_pag_adm_pendientes == 0 && mem->prioridad_maxima_otro_nodo != 0)){
 
                     #ifdef __PRINT_PROCESO
-                    printf("El proceso de administracion evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
+                    printf("El proceso de Administracion evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
                     #endif
 
                     sem_post(&mem->sem_prioridad_maxima_otro_nodo);
