@@ -1,6 +1,5 @@
 #include "procesos.h"
 
-#define EVITAR_RETENCION 2 // Utilidad: Limitar la ejecucion de procesos ne nodo, eviando retencion de exlcusion mutua
 
 int main (int argc, char* argv[]){
 

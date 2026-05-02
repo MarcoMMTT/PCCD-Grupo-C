@@ -1,7 +1,5 @@
 #include "procesos.h"
 
-#define EVITAR_RETENCION 2 // Número de procesos que pueden quedarse pendientes sin que se considere retención
-// PONERLO EN PROCESOS.H
 
 int main(int argc, char *argv[]){
     if(argc != 4){
@@ -191,6 +189,11 @@ int main(int argc, char *argv[]){
             sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
 
 
+            sem_wait(&(mem->sem_testigo));
+            mem->testigo = 1;
+            sem_post(&(mem->sem_testigo));
+
+
             sem_wait(&(mem->sem_atendidas));
             sem_wait(&(mem->sem_peticiones));
             for(int i=0; i < mem->num_nodos; i++){
@@ -261,12 +264,12 @@ int main(int argc, char *argv[]){
 
                         sem_wait(&(mem->sem_contador_procesos_max_SC));
                         sem_wait(&(mem->sem_contador_pag_adm_pendientes));
-                        if(mem->contador_anul_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION > 0){
+                        if(mem->contador_pag_adm_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION > 0){
                             sem_post(&(mem->sem_contador_pag_adm_pendientes));
                             sem_post(&(mem->sem_contador_procesos_max_SC));
                             send_peticiones(mi_id, mem, PAG_ADM);
                         }else{
-                            sem_post(&(mem->sem_contador_anul_pendientes));
+                            sem_post(&(mem->sem_contador_pag_adm_pendientes));
                             sem_post(&(mem->sem_contador_procesos_max_SC));
                         }
                         sem_wait(&(mem->sem_turno_PAG_ADM));
@@ -306,28 +309,35 @@ int main(int argc, char *argv[]){
                             sem_post(&(mem->sem_res_pend));
                         }else{
                             sem_post(&(mem->sem_contador_res_pendientes));
-                            sem_wait(&(mem->sem_atendidas));
-                            sem_wait(&(mem->sem_peticiones));
-                            mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
-                            sem_post(&(mem->sem_peticiones));
-                            sem_post(&(mem->sem_atendidas));
+                            sem_wait(&(mem->sem_contador_cons_pendientes));
+                            if(mem->contador_cons_pendientes > 0){
+                                sem_post(&(mem->sem_contador_cons_pendientes));
+                                sem_wait(&(mem->sem_atendidas));
+                                sem_wait(&(mem->sem_peticiones));
+                                mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
+                                sem_post(&(mem->sem_peticiones));
+                                sem_post(&(mem->sem_atendidas));
 
-                            sem_wait(&(mem->sem_turno_CONS));
-                            mem->turno_CONS = 1;
-                            sem_post(&(mem->sem_turno_CONS));
-                            sem_wait(&(mem->sem_turno));
-                            mem->turno = 1;
-                            sem_post(&(mem->sem_turno));
-                            sem_post(&(mem->sem_cons_pend));
+                                sem_wait(&(mem->sem_turno_CONS));
+                                mem->turno_CONS = 1;
+                                sem_post(&(mem->sem_turno_CONS));
+                                sem_wait(&(mem->sem_turno));
+                                mem->turno = 1;
+                                sem_post(&(mem->sem_turno));
+                                sem_post(&(mem->sem_cons_pend));
+                            }else{
+                                sem_post(&(mem->sem_contador_cons_pendientes));
+                            }
+
+                            
 
                         }
+                    }
                         
                 }
 
             }
-            sem_wait(&(mem->sem_testigo));
-            mem->testigo = 1;
-            sem_post(&(mem->sem_testigo));
+            
             break;
             case 3: // SE RECIBE UN TESTIGO COPIA PARA DAR ACCESO A LEER 
             break;

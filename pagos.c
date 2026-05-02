@@ -1,8 +1,6 @@
 #include "procesos.h"
 #include <sys/time.h>
 
-// Utilidad: Limitar la ejecucion de procesos ne nodo, eviando retencion de exlcusion mutua
-#define EVITAR_RETENCION 2
 
 int main(int argc, char*argv[]){
 
