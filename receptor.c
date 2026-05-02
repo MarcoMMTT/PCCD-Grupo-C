@@ -177,7 +177,6 @@ int main(int argc, char *argv[]){
                 }
             }
 
-
             break;
             case 2: // SE RECIBE EL TESTIGO MAESTRO
             break;
