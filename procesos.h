@@ -26,10 +26,10 @@
 //----------------------------------------------------- {Ifdefs} ----------------------------------------
 //- Puede ser interesantre implementar variables de condición para distintas ejecuciones                -
 //-------------------------------------------------------------------------------------------------------
-#define PRINT_RX        // comentar en caso de no querer mensajes del proceso receptor
-#define PRINT_PROCESO   // comentar en caso de no querer mensajes de los procesos escritores del nodo.
-#define PRINT_CONSULTAS // comentar en caso deno querer mensajes de los procesos consultas.
-#define DEBUG
+//#define PRINT_RX        // comentar en caso de no querer mensajes del proceso receptor
+//#define PRINT_PROCESO   // comentar en caso de no querer mensajes de los procesos escritores del nodo.
+//#define PRINT_CONSULTAS // comentar en caso deno querer mensajes de los procesos consultas.
+//#define DEBUG
 //-------------------------------------------------------------------------------------------------------------
 
 #define NUM_MAX_NODOS 100 // Número máximo de nodos en el sistema. Se puede modificar según las necesidades del sistema.
@@ -102,6 +102,8 @@ typedef struct {
  *   - sem_*_pend: Semáforos adicionales para sincronización de pendientes
  */
 typedef struct {
+
+    int mi_id;  //Mi id de nodo
 
     int num_nodos; // SE RECIBE DEL FICHERO DE CONFIG
     int tiempo_SC; // SE RECIBE DEL FICHERO DE CONFIG [us]
@@ -225,7 +227,7 @@ void calcular_prioridad_maxima(memoria_nodo *mem){
     sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_wait(&(mem->sem_prioridad_maxima));
     #ifdef __DEBUG
-        printf("\tDEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",mem->prioridad_maxima, mem->prioridad_maxima_otro_nodo);
+        printf("\t[Nodo %d] DEBUG: Prioridad máxima en mi nodo: %d. En otro nodo: %d.\n",mem->mi_id, mem->prioridad_maxima, mem->prioridad_max_otro_nodo);
     #endif
     sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
     sem_post(&(mem->sem_prioridad_maxima));

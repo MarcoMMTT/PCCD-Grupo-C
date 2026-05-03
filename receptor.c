@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
         mem->testigo = 0;
         mem->nodo_master = 0;
     }
-
+    mem->mi_id = mi_id;
     mem->num_nodos = num_nodos;
     mem->tiempo_SC = tiempoSC;
     memset(mem->atendidas, 0, sizeof(mem->atendidas));
