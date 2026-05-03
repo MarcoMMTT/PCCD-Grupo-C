@@ -168,7 +168,7 @@ int main(int argc, char* argv[]){
         #endif
 
         sem_wait(&(mem->sem_consultas_dentro));
-        mem->consultas_dentro++;
+        mem->consultas_dentro--;
         sem_post(&(mem->sem_consultas_dentro));
 
         sem_wait(&(mem->sem_contador_cons_pendientes));
