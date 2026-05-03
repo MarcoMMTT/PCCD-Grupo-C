@@ -43,10 +43,10 @@ int main(int argc, char* argv[]){
 
         // Pido el testigo
 
+        sem_post(&(mem->sem_contador_cons_pendientes));
         sem_post(&(mem->sem_testigo));
         sem_post(&(mem->sem_turno_CONS));
         sem_post(&(mem->sem_turno));
-        sem_post(&(mem->sem_contador_cons_pendientes));
 
         calcular_prioridad_maxima(mem);
 
@@ -64,10 +64,10 @@ int main(int argc, char* argv[]){
 
         // No pido el testigo
 
+        sem_post(&(mem->sem_contador_cons_pendientes));
         sem_post(&(mem->sem_testigo));
         sem_post(&(mem->sem_turno_CONS));
         sem_post(&(mem->sem_turno));
-        sem_post(&(mem->sem_contador_cons_pendientes));
 
         #ifdef __PRINT_PROCESO
         printf("El proceso de Consulta no pide el testigo.\n");
@@ -97,6 +97,7 @@ int main(int argc, char* argv[]){
                 if(mem->testigo && mem->prioridad_maxima == CONSULTA){
 
                     sem_post(&(mem->sem_prioridad_maxima));
+                    sem_post(&(mem->sem_testigo));
                     
                     sem_wait(&(mem->sem_turno_CONS));
                     mem->turno_CONS = 1;

@@ -2,10 +2,10 @@
 #include <sys/time.h>
 
 
-int main(int argc, char*argv[]){
+int main(int argc, char* argv[]){
 
     if(argc != 2){
-        printf("Uso correcto: ./pagos id_nodo \n");
+        printf("Uso correcto: ./administraciones id_nodo \n");
         exit(EXIT_FAILURE);
     }
 
@@ -44,11 +44,11 @@ int main(int argc, char*argv[]){
 
             // Pido el testigo
 
+            sem_post(&(mem->sem_contador_pag_adm_pendientes));
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_PAG_ADM));
-            sem_post(&(mem->sem_contador_procesos_max_SC));
             sem_post(&(mem->sem_turno));
-            sem_post(&(mem->sem_contador_pag_adm_pendientes));
+            sem_post(&(mem->sem_contador_procesos_max_SC));
             
             sem_wait(&(mem->sem_turno_CONS));
             mem->turno_CONS = 0;
@@ -57,28 +57,27 @@ int main(int argc, char*argv[]){
             calcular_prioridad_maxima(mem);
 
             #ifdef __PRINT_PROCESO
-            printf("El proceso de pago tiene que pedir el testigo.\n");
+            printf("El proceso de Pago tiene que pedir el testigo.\n");
             #endif
 
             // Se envian las peticiones
             send_peticiones(mi_id, mem, PAG_ADM);
 
             // Acabamos con el envio de peticiones
-
             sem_wait(&(mem->sem_pag_adm_pend));
 
         }else{
 
             // No pido el testigo
 
+            sem_post(&(mem->sem_contador_pag_adm_pendientes));
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_PAG_ADM));
             sem_post(&(mem->sem_turno));
             sem_post(&(mem->sem_contador_procesos_max_SC));
-            sem_post(&(mem->sem_contador_pag_adm_pendientes));
 
             #ifdef __PRINT_PROCESO
-            printf("El proceso de pago no tiene que pedir el testigo.\n");
+            printf("El proceso de Pago no tiene que pedir el testigo.\n");
             #endif
 
             sem_wait(&(mem->sem_dentro));
@@ -91,7 +90,7 @@ int main(int argc, char*argv[]){
                 sem_post(&(mem->sem_dentro));
                 sem_post(&(mem->sem_testigo));
                 #ifdef __PRINT_PROCESO
-                printf("El proceso de pago tiene que esperar ya que no tiene permiso.\n");
+                printf("El proceso de Pago tiene que esperar ya que no tiene permiso.\n");
                 #endif
                 sem_wait(&(mem->sem_pag_adm_pend));
 
@@ -121,7 +120,7 @@ int main(int argc, char*argv[]){
         // SECCION CRITICA
 
         #ifdef __PRINT_PROCESO
-        printf("Proceso de pago accede a la SC.\n");
+        printf("Proceso de Pago accede a la SC.\n");
         #endif
 
         gettimeofday(&timeSC, NULL);
@@ -140,11 +139,11 @@ int main(int argc, char*argv[]){
 
         usleep(mem->tiempo_SC);
 
-        gettimeofday(&timeFinSC, NULL);
-        
         #ifdef __PRINT_PROCESO
-        printf("El proceso de pago sale de la SC.\n");
+        printf("El proceso de Pago sale de la SC.\n");
         #endif
+
+        gettimeofday(&timeFinSC, NULL);
 
         calcular_prioridad_maxima(mem);
 
@@ -193,12 +192,12 @@ int main(int argc, char*argv[]){
                 if(mem->contador_procesos_max_SC >= EVITAR_RETENCION || (mem->contador_pag_adm_pendientes == 0 && mem->prioridad_maxima_otro_nodo != 0)){
 
                     #ifdef __PRINT_PROCESO
-                    printf("El proceso de pago evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
+                    printf("El proceso de Pago evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
                     #endif
 
-                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     sem_post(&(mem->sem_contador_procesos_max_SC));
                     sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
 
                     sem_wait(&(mem->sem_turno_PAG_ADM));
                     mem->turno_PAG_ADM = 0;
@@ -223,9 +222,10 @@ int main(int argc, char*argv[]){
 
                 }else{
 
-                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     sem_post(&(mem->sem_contador_procesos_max_SC));
                     sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
                     sem_post(&(mem->sem_pag_adm_pend));
 
                 }
@@ -249,9 +249,6 @@ int main(int argc, char*argv[]){
                         sem_wait(&(mem->sem_atendidas));
                         sem_wait(&(mem->sem_peticiones));
                         mem->atendidas[mi_id - 1][ANUL - 1] = mem->peticiones[mi_id - 1][ANUL - 1];
-                        #ifdef __DEBUG
-                        printf("DEBUG --> atendidas %d, peticiones %d.\n", mem->atendidas[mi_id - 1][ANUL - 1], mem->peticiones[mi_id - 1][ANUL - 1]);
-                        #endif
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
 
@@ -291,9 +288,6 @@ int main(int argc, char*argv[]){
                         sem_wait(&(mem->sem_atendidas));
                         sem_wait(&(mem->sem_peticiones));
                         mem->atendidas[mi_id - 1][RESERVA - 1] = mem->peticiones[mi_id - 1][RESERVA - 1];
-                        #ifdef __DEBUG
-                        printf("DEBUG --> atendidas %d, peticiones %d.\n", mem->atendidas[mi_id - 1][RESERVA - 1], mem->peticiones[mi_id - 1][RESERVA - 1]);
-                        #endif
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
 
@@ -334,9 +328,6 @@ int main(int argc, char*argv[]){
                         sem_wait(&(mem->sem_atendidas));
                         sem_wait(&(mem->sem_peticiones));
                         mem->atendidas[mi_id - 1][CONSULTA - 1] = mem->peticiones[mi_id - 1][CONSULTA - 1];
-                        #ifdef __DEBUG
-                        printf("DEBUG --> atendidas %d, peticiones %d.\n", mem->atendidas[mi_id - 1][CONSULTA - 1], mem->peticiones[mi_id - 1][CONSULTA - 1]);
-                        #endif
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
 
@@ -358,12 +349,12 @@ int main(int argc, char*argv[]){
 
                     sem_wait(&(mem->sem_atendidas));
                     sem_wait(&(mem->sem_peticiones));
-                    mem-> atendidas[mi_id - 1][PAG_ADM - 1] = mem->peticiones[mi_id - 1][PAG_ADM - 1];
+                    mem->atendidas[mi_id - 1][PAG_ADM - 1] = mem->peticiones[mi_id - 1][PAG_ADM - 1];
                     sem_post(&(mem->sem_atendidas));
                     sem_post(&(mem->sem_peticiones));
 
                     sem_wait(&(mem->sem_turno_PAG_ADM));
-                    mem->turno_ANUL = 0;
+                    mem->turno_PAG_ADM = 0;
                     sem_post(&(mem->sem_turno_PAG_ADM));
 
                     sem_wait(&(mem->sem_turno));
