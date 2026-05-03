@@ -48,11 +48,11 @@ int main(int argc, char *argv[]){
          (mem->testigo && mem->turno_RES && (mem->contador_res_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION) == 1)
          || (mem->testigo && (mem->contador_res_pendientes == 1) && !mem->turno_RES && mem->turno)){ 
         //RAMA DE PEDIR EL TESTIGO
+        sem_post(&(mem->sem_contador_res_pendientes));
         sem_post(&(mem->sem_testigo));
         sem_post(&(mem->sem_turno_RES));
-        sem_post(&(mem->sem_contador_procesos_max_SC));
         sem_post(&(mem->sem_turno));
-        sem_post(&(mem->sem_contador_res_pendientes));
+        sem_post(&(mem->sem_contador_procesos_max_SC));
         
         sem_wait(&(mem->sem_turno_CONS));
         mem->turno_CONS = 0; // false
@@ -70,11 +70,11 @@ int main(int argc, char *argv[]){
         // ACABAMOS CON EL ENVIO DE PETICIONES AHORA ME TOCA ESPERAR.
         sem_wait(&(mem->sem_res_pend));
     }else{ // NO TENGO QUE PEDIR EL TESTIGO
+        sem_post(&(mem->sem_contador_res_pendientes));
         sem_post(&(mem->sem_testigo));
         sem_post(&(mem->sem_turno_RES));
         sem_post(&(mem->sem_turno));
         sem_post(&(mem->sem_contador_procesos_max_SC));
-        sem_post(&(mem->sem_contador_res_pendientes));
         
         #ifdef __PRINT_PROCESO
         printf("El proceso de Reserva no tiene que pedir el testigo.\n");
@@ -84,8 +84,9 @@ int main(int argc, char *argv[]){
         sem_wait(&(mem->sem_dentro));
         
         if ((mem->dentro) || !(mem->testigo)){ // SI HAY ALGUIEN DENTRO O NO TENGO EL TESTIGO, ESPERO
-            sem_post(&(mem->sem_dentro));
+            
             sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_dentro));
             
             #ifdef __PRINT_PROCESO
             printf("El proceso de Reserva tiene que esperar ya que no tiene permiso.\n");
@@ -93,8 +94,8 @@ int main(int argc, char *argv[]){
             
             sem_wait(&(mem->sem_res_pend));
         }else{ // SI NO HAY NADIE DENTRO
-            sem_post(&(mem->sem_dentro));
             sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_dentro));
             
             sem_wait(&(mem->sem_prioridad_maxima));
             mem->prioridad_maxima = RESERVA;
@@ -180,9 +181,9 @@ int main(int argc, char *argv[]){
                 #ifdef __PRINT_PROCESO
                 printf("El proceso de Reserva evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
                 #endif
-                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 sem_post(&(mem->sem_contador_procesos_max_SC));
                 sem_post(&(mem->sem_contador_res_pendientes));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 
                 sem_wait(&(mem->sem_turno_RES));
                 mem->turno_RES = 0;
@@ -205,9 +206,10 @@ int main(int argc, char *argv[]){
                     send_testigo(mi_id, mem);
                 }
             }else{
-                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 sem_post(&(mem->sem_contador_procesos_max_SC));
                 sem_post(&(mem->sem_contador_res_pendientes));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                
                 sem_post(&(mem->sem_res_pend));
             }
         }else{
