@@ -1,0 +1,23 @@
+# Ejecutables (binarios generados)
+inicio
+borrarColas
+eliminarShm
+pagos
+anulaciones
+administarciones
+reservas
+consultas
+# También por si compilas otros sin extensión
+*.out
+*.exe
+*.o
+
+# Archivos generados por el programa
+salida.txt
+
+# Archivos temporales del sistema
+*~
+*.swp
+
+# (Opcional) PDFs si no quieres versionarlos
+# *.pdf
