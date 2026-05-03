@@ -247,7 +247,7 @@ int main(int argc, char* argv[]){
                         
                         sem_wait(&(mem->sem_atendidas));
                         sem_wait(&(mem->sem_peticiones));
-                        mem->atendidas[mi_id - 1][PAG_ADM - 1] = mem->peticiones[mi_id - 1][PAG_ADM - 1];
+                        mem->atendidas[mi_id - 1][ANUL - 1] = mem->peticiones[mi_id - 1][ANUL - 1];
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
 
