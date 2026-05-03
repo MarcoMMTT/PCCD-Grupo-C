@@ -139,12 +139,12 @@ int main (int argc, char* argv[]){
         sem_post(&(mem->sem_contador_procesos_max_SC));
 
         usleep(mem->tiempo_SC);
+        
+        gettimeofday(&timeFinSC, NULL);
 
         #ifdef __PRINT_PROCESO
         printf("Proceso de anulación sale de la SC.\n");
         #endif
-
-        gettimeofday(&timeFinSC, NULL);
 
         calcular_prioridad_maxima(mem);
 
@@ -173,7 +173,7 @@ int main (int argc, char* argv[]){
             sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
             if(mem->prioridad_maxima_otro_nodo == CONSULTA){
                 sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
-                send_testigo_falso(mi_id, mem);
+                send_testigo_copia(mi_id, mem);
             }else{
                 sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 send_testigo(mi_id, mem);
@@ -214,7 +214,7 @@ int main (int argc, char* argv[]){
                     sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
                     if(mem->prioridad_maxima_otro_nodo == CONSULTA){
                         sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
-                        send_testigo_falso(mi_id, mem);
+                        send_testigo_copia(mi_id, mem);
                     }else{
                         sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                         send_testigo(mi_id, mem);

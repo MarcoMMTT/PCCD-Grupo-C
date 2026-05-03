@@ -7,7 +7,6 @@
 #include "procesos.h"
 #include <sys/time.h>
 
-
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Uso: %s <id_nodo>\n", argv[0]);
@@ -25,6 +24,8 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
     memoria_nodo *mem = (memoria_nodo *)shmat(memoria_id, NULL, 0);
+
+    gettimeofday(&timeInicio, NULL);
     
     // Incrementar el contador de procesos de reserva pendientes en el nodo
     sem_wait(&(mem->sem_contador_res_pendientes));
