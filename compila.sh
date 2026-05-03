@@ -1,10 +1,10 @@
-gcc -Wall consultas.c -o consulta -lpthread -D __DEBUG
-gcc -Wall administraciones.c -o administraciones -lpthread -D __DEBUG
-gcc -Wall reservas.c -o reservas -lpthread -D __DEBUG
-gcc -Wall pagos.c -o pagos -lpthread -D __DEBUG
-gcc -Wall receptor.c -o receptor -lpthread -D __DEBUG
-gcc -Wall anulaciones.c -o anulaciones -lpthread -D __DEBUG
-gcc -Wall inicio.c -o inicio -lpthread -D __DEBUG 
+gcc -Wall consultas.c -o consulta -lpthread
+gcc -Wall administraciones.c -o administraciones -lpthread
+gcc -Wall reservas.c -o reservas -lpthread
+gcc -Wall pagos.c -o pagos -lpthread
+gcc -Wall receptor.c -o receptor -lpthread
+gcc -Wall anulaciones.c -o anulaciones -lpthread
+gcc -Wall inicio.c -o inicio -lpthread
 
 echo "PROGRAMAS COMPILADOS CORRECTAMENTE"
 
