@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
 
     printf("Buzones borrados\n");
 
-    for (int shmid = shmid1; shmid <= shmid2; shmid++) {
+    for (int shmid = primero; shmid <= ultimo; shmid++) {
         if (shmctl(shmid, IPC_RMID, NULL) == -1) {
             printf("No se pudo eliminar shmid %d (errno=%d)\n", shmid, errno);
         } else {
