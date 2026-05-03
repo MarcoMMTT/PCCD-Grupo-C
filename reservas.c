@@ -151,9 +151,10 @@ int main(int argc, char *argv[]) {
                 #ifdef __PRINT_PROCESO
                 printf("RESERVAS --> Quiero evitar la exclusión mutua o ya no hay procesos de esta prioridad en mi nodo.\n");
                 #endif
-                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                
                 sem_post(&(mem->sem_contador_procesos_max_SC));
                 sem_post(&(mem->sem_contador_res_pendientes));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 
                 sem_wait(&(mem->sem_turno_RES));
                 mem->turno_RES = 0;
@@ -176,9 +177,10 @@ int main(int argc, char *argv[]) {
                     send_testigo(mi_id, mem);
                 }
             }else{
-                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 sem_post(&(mem->sem_contador_procesos_max_SC));
                 sem_post(&(mem->sem_contador_res_pendientes));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                
                 sem_post(&(mem->sem_res_pend));
             }
         }else{
