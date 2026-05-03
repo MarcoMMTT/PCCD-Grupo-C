@@ -43,11 +43,11 @@ int main (int argc, char* argv[]){
 
             // Pido el testigo
 
+            sem_post(&(mem->sem_contador_anul_pendientes));
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_ANUL));
-            sem_post(&(mem->sem_contador_procesos_max_SC));
             sem_post(&(mem->sem_turno));
-            sem_post(&(mem->sem_contador_anul_pendientes));
+            sem_post(&(mem->sem_contador_procesos_max_SC));
 
             sem_wait(&(mem->sem_turno_CONS));  
             mem->turno_CONS = 0;
@@ -71,11 +71,11 @@ int main (int argc, char* argv[]){
 
             // No pido el testigo
 
+            sem_post(&(mem->sem_contador_anul_pendientes));
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_ANUL));
             sem_post(&(mem->sem_turno));
             sem_post(&(mem->sem_contador_procesos_max_SC));
-            sem_post(&(mem->sem_contador_anul_pendientes));
 
             #ifdef __PRINT_PROCESO
             printf("ANULACIONES --> No pido el testigo.\n");
@@ -88,8 +88,8 @@ int main (int argc, char* argv[]){
 
                 // Espero si hay alguien dentro o no tengo el testigo
 
-                sem_post(&(mem->sem_dentro));
                 sem_post(&(mem->sem_testigo));
+                sem_post(&(mem->sem_dentro));
 
                 #ifdef __PRINT_PROCESO
                 printf("ANULACIONES --> Espero porque no tengo permiso.\n");
@@ -101,8 +101,8 @@ int main (int argc, char* argv[]){
 
                 // Si no hay nadie dentro
 
-                sem_post(&(mem->sem_dentro));
                 sem_post(&(mem->sem_testigo));
+                sem_post(&(mem->sem_dentro));
 
                 sem_wait(&(mem->sem_prioridad_maxima));
                 mem->prioridad_maxima = ANUL;
@@ -185,6 +185,7 @@ int main (int argc, char* argv[]){
 
                 sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                 sem_post(&(mem->sem_prioridad_maxima));
+
                 sem_wait(&(mem->sem_contador_procesos_max_SC));
                 sem_wait(&(mem->sem_contador_anul_pendientes));
                 sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
@@ -195,9 +196,9 @@ int main (int argc, char* argv[]){
                     printf("ANULACIONES --> Evito exclusion mutua o no hay procesos de esta prioridad en mi nodo.\n");
                     #endif
 
-                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     sem_post(&(mem->sem_contador_procesos_max_SC));
                     sem_post(&(mem->sem_contador_anul_pendientes));
+                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     
                     sem_wait(&(mem->sem_turno_ANUL));
                     mem->turno_ANUL = 0;
@@ -222,9 +223,10 @@ int main (int argc, char* argv[]){
 
                 }else{
 
-                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     sem_post(&(mem->sem_contador_procesos_max_SC));
                     sem_post(&(mem->sem_contador_anul_pendientes));
+                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
                     sem_post(&(mem->sem_anul_pend));
                 }
 
@@ -256,6 +258,7 @@ int main (int argc, char* argv[]){
                             #endif
 
                             sem_post(&(mem->sem_prioridad_maxima));
+                            
                             sem_wait(&(mem->sem_turno_ANUL));
                             mem->turno_ANUL = 0;
                             sem_post(&(mem->sem_turno_ANUL));
@@ -288,6 +291,7 @@ int main (int argc, char* argv[]){
                             #endif
 
                             sem_post(&(mem->sem_prioridad_maxima));
+
                             sem_wait(&(mem->sem_turno_ANUL));
                             mem->turno_ANUL = 0;
                             sem_post(&(mem->sem_turno_ANUL));

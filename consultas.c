@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
     mem = shmat(memoria_id, NULL, 0);
 
     #ifdef __DEBUG
-    printf("Id de memoria compartida: %d", memoria_id);
+    printf("Id de memoria compartida: %d\n", memoria_id);
     #endif
 
     #ifdef __PRINT_PROCESO

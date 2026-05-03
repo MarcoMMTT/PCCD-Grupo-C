@@ -44,11 +44,11 @@ int main(int argc, char* argv[]){
 
             // Pido el testigo
 
+            sem_post(&(mem->sem_contador_pag_adm_pendientes));
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_PAG_ADM));
-            sem_post(&(mem->sem_contador_procesos_max_SC));
             sem_post(&(mem->sem_turno));
-            sem_post(&(mem->sem_contador_pag_adm_pendientes));
+            sem_post(&(mem->sem_contador_procesos_max_SC));
             
             sem_wait(&(mem->sem_turno_CONS));
             mem->turno_CONS = 0;
@@ -70,11 +70,11 @@ int main(int argc, char* argv[]){
 
             // No pido el testigo
 
+            sem_post(&(mem->sem_contador_pag_adm_pendientes));
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_PAG_ADM));
             sem_post(&(mem->sem_turno));
             sem_post(&(mem->sem_contador_procesos_max_SC));
-            sem_post(&(mem->sem_contador_pag_adm_pendientes));
 
             #ifdef __PRINT_PROCESO
             printf("El proceso de Administracion no tiene que pedir el testigo.\n");
@@ -187,7 +187,7 @@ int main(int argc, char* argv[]){
 
                 sem_wait(&(mem->sem_contador_procesos_max_SC));
                 sem_wait(&(mem->sem_contador_pag_adm_pendientes));
-                sem_wait(&(mem->sem_prioridad_maxima));
+                sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
 
                 if(mem->contador_procesos_max_SC >= EVITAR_RETENCION || (mem->contador_pag_adm_pendientes == 0 && mem->prioridad_maxima_otro_nodo != 0)){
 
@@ -195,9 +195,9 @@ int main(int argc, char* argv[]){
                     printf("El proceso de Administracion evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
                     #endif
 
-                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     sem_post(&(mem->sem_contador_procesos_max_SC));
                     sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
 
                     sem_wait(&(mem->sem_turno_PAG_ADM));
                     mem->turno_PAG_ADM = 0;
@@ -222,16 +222,17 @@ int main(int argc, char* argv[]){
 
                 }else{
 
-                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
                     sem_post(&(mem->sem_contador_procesos_max_SC));
                     sem_post(&(mem->sem_contador_pag_adm_pendientes));
+                    sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
                     sem_post(&(mem->sem_pag_adm_pend));
 
                 }
 
             }else{
 
-                sem_post(&(mem->sem_prioridad_maxima));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
 
                 if(mem->prioridad_maxima != 0){
 
