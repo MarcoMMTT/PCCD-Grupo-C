@@ -250,7 +250,7 @@ int main(int argc, char*argv[]){
                         sem_wait(&(mem->sem_peticiones));
                         mem->atendidas[mi_id - 1][ANUL - 1] = mem->peticiones[mi_id - 1][ANUL - 1];
                         #ifdef __DEBUG
-                        printf("DEBUG --> atendidas %d, peticiones %d.\n", atendidas[mi_id - 1][ANUL - 1], peticiones[mi_id - 1][ANUL - 1]);
+                        printf("DEBUG --> atendidas %d, peticiones %d.\n", mem->atendidas[mi_id - 1][ANUL - 1], mem->peticiones[mi_id - 1][ANUL - 1]);
                         #endif
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
@@ -292,7 +292,7 @@ int main(int argc, char*argv[]){
                         sem_wait(&(mem->sem_peticiones));
                         mem->atendidas[mi_id - 1][RESERVA - 1] = mem->peticiones[mi_id - 1][RESERVA - 1];
                         #ifdef __DEBUG
-                        printf("DEBUG --> atendidas %d, peticiones %d.\n", atendidas[mi_id - 1][RESERVA - 1], peticiones[mi_id - 1][RESERVA - 1]);
+                        printf("DEBUG --> atendidas %d, peticiones %d.\n", mem->atendidas[mi_id - 1][RESERVA - 1], mem->peticiones[mi_id - 1][RESERVA - 1]);
                         #endif
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
@@ -335,7 +335,7 @@ int main(int argc, char*argv[]){
                         sem_wait(&(mem->sem_peticiones));
                         mem->atendidas[mi_id - 1][CONSULTA - 1] = mem->peticiones[mi_id - 1][CONSULTA - 1];
                         #ifdef __DEBUG
-                        printf("DEBUG --> atendidas %d, peticiones %d.\n", atendidas[mi_id - 1][CONSULTA - 1], peticiones[mi_id - 1][CONSULTA - 1]);
+                        printf("DEBUG --> atendidas %d, peticiones %d.\n", mem->atendidas[mi_id - 1][CONSULTA - 1], mem->peticiones[mi_id - 1][CONSULTA - 1]);
                         #endif
                         sem_post(&(mem->sem_atendidas));
                         sem_post(&(mem->sem_peticiones));
