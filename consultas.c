@@ -167,6 +167,10 @@ int main(int argc, char* argv[]){
         printf("El proceso de Consulta sale de la SC.\n");
         #endif
 
+        sem_wait(&(mem->sem_consultas_dentro));
+        mem->consultas_dentro++;
+        sem_post(&(mem->sem_consultas_dentro));
+
         sem_wait(&(mem->sem_contador_cons_pendientes));
         mem->contador_cons_pendientes--;
         sem_post(&(mem->sem_contador_cons_pendientes));
