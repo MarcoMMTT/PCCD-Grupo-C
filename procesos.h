@@ -156,10 +156,10 @@ int max(int a, int b){
  * Esta función implementa un algoritmo jerárquico para determinar la prioridad más alta
  * entre todas las peticiones pendientes en el nodo actual. El algoritmo evalúa, en orden
  * de prioridad descendente, cuántas peticiones de cada tipo hay pendientes:
- *   1. ANUL (4) - Anulaciones
- *   2. PAG_ADM (3) - Pagos y Administración
- *   3. RESERVA (2) - Reservas
- *   4. CONSULTA (1) - Consultas
+ *   · ANUL (4) - Anulaciones
+ *   · PAG_ADM (3) - Pagos y Administración
+ *   · RESERVA (2) - Reservas
+ *   · CONSULTA (1) - Consultas
  *
  * Si se encuentran peticiones de una categoría, se asigna esa prioridad como la máxima.
  * Si no hay peticiones en ninguna categoría, la prioridad se establece en 0.
@@ -378,6 +378,7 @@ void send_testigo(int mi_id, memoria_nodo *mem){
 void send_peticiones(int mi_id, memoria_nodo *mem, int prioridad){
 
     msgbuf_mensaje mensaje_peticion;
+    //calcular_prioridad_maxima(mem);                      <---------- Podríamos poner esto aqui para simplificar las funciones
     mensaje_peticion.msg_type = (long)1; // SOLICITUD
     mensaje_peticion.id = mi_id;
     mensaje_peticion.prioridad = prioridad;
