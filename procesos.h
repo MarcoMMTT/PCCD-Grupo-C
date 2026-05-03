@@ -75,7 +75,7 @@ typedef struct {
  *
  * VARIABLES DE CONFIGURACIÓN (leídas del fichero config):
  *   - num_nodos: Número total de nodos en el sistema distribuido
- *   - tiempo_SC: Duración máxima permitida en sección crítica
+ *   - tiempo_SC: Duración máxima permitida en sección crítica en us.
  *
  * VARIABLES PARA LECTORES (Procesos de Consulta):
  *   - consultas_dentro: Contador de procesos de consulta en sección crítica
@@ -104,7 +104,7 @@ typedef struct {
 typedef struct {
 
     int num_nodos; // SE RECIBE DEL FICHERO DE CONFIG
-    int tiempo_SC; // SE RECIBE DEL FICHERO DE CONFIG
+    int tiempo_SC; // SE RECIBE DEL FICHERO DE CONFIG [us]
 
 
     // VARIABLES QUE VAN A USAR LOS LECTORES:

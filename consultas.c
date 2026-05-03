@@ -161,11 +161,11 @@ int main(int argc, char* argv[]){
 
         sleep(mem->tiempo_SC);
 
+        gettimeofday(&timeFinSC, NULL);
+
         #ifdef __PRINT_PROCESO
         printf("El proceso de Consulta sale de la SC.\n");
         #endif
-
-        gettimeofday(&timeFinSC, NULL);
 
         sem_wait(&(mem->sem_contador_cons_pendientes));
         mem->contador_cons_pendientes--;

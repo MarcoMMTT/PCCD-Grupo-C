@@ -5,6 +5,8 @@
  */
 
 #include "procesos.h"
+#include <sys/time.h>
+
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -13,6 +15,8 @@ int main(int argc, char *argv[]) {
     }
 
     int mi_id = atoi(argv[1]);
+    struct timeval timeInicio, timeSC, timeFinSC, timeFin;
+
     // Vincular la memoria compartida
     int memoria_id = shmget(mi_id, sizeof(memoria_nodo), 0);
     if (memoria_id == -1) {
@@ -24,18 +28,61 @@ int main(int argc, char *argv[]) {
     // Incrementar el contador de procesos de reserva pendientes en el nodo
     sem_wait(&(mem->sem_contador_res_pendientes));
     mem->contador_res_pendientes++;
-    sem_post(&(mem->sem_contador_res_pendientes));
+    //sem_post(&(mem->sem_contador_res_pendientes)); ESTO TIENE QUE ESTAR EN CUALQUIER CASO DESPUES DE USARSE
 
-    if (mem->contador_res_pendientes == 1) { // Posible Inanición si se contador_res_pendientes++ por segunda vez antes del if 
+    if (mem->contador_res_pendientes == 1) { 
+        sem_post(&(mem->sem_contador_res_pendientes));
         // Tenemos el testigo en el nodo y nadie está en la Sección Crítica
-        if (!(mem->testigo) && mem->dentro == 0) {
-            calcular_prioridad_maxima(mem);
-            send_peticiones(mi_id, mem, RESERVA); // Ya hace petición++
-            sem_wait(&(mem->sem_res_pend));
-            mem->testigo = 1;
-            
+        sem_wait(&(mem->sem_testigo));              //
+        if (!(mem->testigo)) {                      // SC: mem->testigo
+            sem_post(&(mem->sem_testigo));          //
+            calcular_prioridad_maxima(mem);         
+            send_peticiones(mi_id, mem, RESERVA);   
+        } else {                                    
+            sem_post(&(mem->sem_testigo));          // SC: mem->testigo
         }
+
+        sem_wait(&(mem->sem_res_pend));                                
+
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Reservas accede a la SC.\n");
+        #endif
+
+        sem_wait(&(mem->sem_dentro));       //
+                                            //
+        gettimeofday(&timeSC, NULL);        //
+                                            //
+        mem->dentro = 1;                    // SC: SECCIÓN CRÍTICA
+        msleep(mem->tiempo_SC);             //
+                                            //
+        gettimeofday(&timeFinSC, NULL);     //
+                                            //
+        sem_post(&(mem->sem_dentro));       //
+
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Consulta sale de la SC.\n");
+        #endif
+
+    } else {
+        sem_post(&(mem->sem_contador_res_pendientes));
     }
+    // -------------------------------------------------------------------------
+    // ESPERA Y ENTRADA A SECCIÓN CRÍTICA
+    // -------------------------------------------------------------------------
+
+    #ifdef __PRINT_PROCESO
+    printf("El proceso de Reservas accede a la SC.\n");
+    #endif
+
+    gettimeofday(&timeSC, NULL);
+
+    sleep(mem->tiempo_SC);
+
+    #ifdef __PRINT_PROCESO
+    printf("El proceso de Consulta sale de la SC.\n");
+    #endif
+
+    gettimeofday(&timeFinSC, NULL);
 
 
     // Evaluar si tenemos el testigo y si el nodo está libre
@@ -63,9 +110,7 @@ int main(int argc, char *argv[]) {
     sem_post(&(mem->sem_dentro));
     sem_post(&(mem->sem_testigo));
 
-    // -------------------------------------------------------------------------
-    // ESPERA Y ENTRADA A SECCIÓN CRÍTICA
-    // -------------------------------------------------------------------------
+
     
     // WAIT(sem_proceso_esp) o esperar recepción de testigo (RECEIVE TOKEN)
     // Nos bloqueamos hasta que el proceso RX o el proceso saliente nos despierte

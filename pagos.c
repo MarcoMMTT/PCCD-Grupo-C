@@ -140,11 +140,11 @@ int main(int argc, char*argv[]){
 
         sleep(mem->tiempo_SC);
 
+        gettimeofday(&timeFinSC, NULL);
+        
         #ifdef __PRINT_PROCESO
         printf("El proceso de pago sale de la SC.\n");
         #endif
-
-        gettimeofday(&timeFinSC, NULL);
 
         calcular_prioridad_maxima(mem);
 
