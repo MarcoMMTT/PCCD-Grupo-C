@@ -4,6 +4,17 @@
 #include <unistd.h>
 #include <string.h>
 
+void controlar_rafaga(int *lanzados_en_rafaga, int tamRafaga, int tiempoEntreRafagas) {
+    if (tamRafaga <= 0) return;
+
+    (*lanzados_en_rafaga)++;
+
+    if (*lanzados_en_rafaga >= tamRafaga) {
+        usleep(tiempoEntreRafagas);
+        *lanzados_en_rafaga = 0;
+    }
+}
+
 
 int main(int argc, char *argv[]){
     if(argc < 2){
@@ -16,6 +27,8 @@ int main(int argc, char *argv[]){
     int tiempoSC=0;
     int n =0;
     int a;
+    int tamRafaga = 0;
+    int tiempoEntreRafagas = 0; //En ms
 
     FILE *ficheroConfig = fopen(argv[1], "r");
     if (ficheroConfig == NULL) {
@@ -56,6 +69,12 @@ int main(int argc, char *argv[]){
         } else if (strcmp(variable, "tiempoSC") == 0) {
             tiempoSC = valor;
             printf("tiempoSC: %d\n", tiempoSC);
+        } else if (strcmp(variable, "tamRafaga") == 0) {
+            tamRafaga = valor;
+            printf("tamRafaga: %d\n", tamRafaga);
+        } else if (strcmp(variable, "tiempoEntreRafagas") == 0) {
+            tiempoEntreRafagas = valor;
+            printf("tiempoEntreRafagas: %d\n", tiempoEntreRafagas);
         } else {
             printf("Variable desconocida: %s\n", variable);
         }
@@ -72,6 +91,14 @@ int main(int argc, char *argv[]){
         printf("Número de operaciones inválido. No puede ser negativo.\n");
         return 1;
     }
+    if(tamRafaga < 0){
+        printf("Tamaño de ráfaga inválido. No puede ser negativo.\n");
+        return 1;
+    }
+    if(tiempoEntreRafagas < 0){
+        printf("Tiempo entre ráfagas inválido. No puede ser negativo.\n");
+        return 1;
+    }
     fclose(ficheroConfig);
     
     char tiempoSCStr[12];
@@ -85,7 +112,7 @@ int main(int argc, char *argv[]){
         if(procesosReceptor[i] == 0){
             //Aquí va el execl
             snprintf(idNodo, sizeof(idNodo), "%d", i);
-            //execl("./receptor", "receptor", idNodo, numNodosStr, tiempoSCStr, NULL);
+            execl("./receptor", "receptor", idNodo, numNodosStr, tiempoSCStr, NULL);
             return 0;
         }
     }
@@ -94,6 +121,8 @@ int main(int argc, char *argv[]){
 
     int numOperaciones = (numPagos + numAnulaciones + numReservas + numAdmin + numConsultas) * numNodos;
     int procesosHijos[numOperaciones+1];
+
+    int lanzados_en_rafaga = 0;
     for(i=1; i<=numNodos;i++){
         snprintf(idNodo, sizeof(idNodo), "%d", i);
 
@@ -101,27 +130,30 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./anulaciones", "anulaciones", idNodo, NULL);
+                execl("./anulaciones", "anulaciones", idNodo, NULL);
                 return 0;
             }
             n++;
+            controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
         }
 
         for(a=0;a<numPagos;a++){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./pagos", "pagos", idNodo, NULL);
+                execl("./pagos", "pagos", idNodo, NULL);
                 return 0;
             }
             n++;
+            controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
+
         }
         
         for(a=0;a<numAdmin;a++){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./admin", "admin", idNodo, NULL);
+                execl("./admin", "admin", idNodo, NULL);
                 return 0;   
             }
             n++;
@@ -130,20 +162,22 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./reservas", "reservas", idNodo, NULL);
+                execl("./reservas", "reservas", idNodo, NULL);
                 return 0;
             }
             n++;
+            controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
         }
         
         for(a=0;a<numConsultas;a++){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                //execl("./consultas", "consultas", idNodo, NULL);
+                execl("./consultas", "consultas", idNodo, NULL);
                 return 0;
             }
             n++;
+            controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
         }
 
 
