@@ -41,95 +41,84 @@ int main(int argc, char* argv[]){
     if ((!mem->testigo && mem->contador_cons_pendientes == 1) ||
         (mem->testigo && mem->contador_cons_pendientes == 1 && !mem->turno_CONS && mem->turno)){
 
-            // Pido el testigo
+        // Pido el testigo
+
+        sem_post(&(mem->sem_testigo));
+        sem_post(&(mem->sem_turno_CONS));
+        sem_post(&(mem->sem_turno));
+        sem_post(&(mem->sem_contador_cons_pendientes));
+
+        calcular_prioridad_maxima(mem);
+
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Consulta tiene que pedir el testigo.\n");
+        #endif
+
+        // Se envian las peticiones
+        send_peticiones(mi_id, mem, CONSULTA);
+
+        // Acaban de enviarse las peticiones
+        sem_wait(&(mem->sem_cons_pend));
+
+    }else{
+
+        // No pido el testigo
+
+        sem_post(&(mem->sem_testigo));
+        sem_post(&(mem->sem_turno_CONS));
+        sem_post(&(mem->sem_turno));
+        sem_post(&(mem->sem_contador_cons_pendientes));
+
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Consulta no pide el testigo.\n");
+        #endif
+
+        sem_wait(&(mem->sem_testigo));
+        sem_wait(&(mem->sem_turno_CONS));
+
+        if ((!(mem->testigo) && !mem->turno_CONS) || (!mem->consultas_dentro)){
+
+            // No hay nadie dentro ni tengo el testigo
 
             sem_post(&(mem->sem_testigo));
             sem_post(&(mem->sem_turno_CONS));
-            sem_post(&(mem->sem_turno));
-            sem_post(&(mem->sem_contador_cons_pendientes));
 
-            calcular_prioridad_maxima(mem);
+            sem_wait(&(mem->sem_contador_cons_pendientes));
 
-            #ifdef __PRINT_PROCESO
-            printf("El proceso de Consulta tiene que pedir el testigo.\n");
-            #endif
+            if(mem->contador_cons_pendientes == 1){
 
-            // Se envian las peticiones
-            send_peticiones(mi_id, mem, CONSULTA);
-
-            // Acaban de enviarse las peticiones
-            sem_wait(&(mem->sem_cons_pend));
-
-        }else{
-
-            // No pido el testigo
-
-            sem_post(&(mem->sem_testigo));
-            sem_post(&(mem->sem_turno_CONS));
-            sem_post(&(mem->sem_turno));
-            sem_post(&(mem->sem_contador_cons_pendientes));
-
-            #ifdef __PRINT_PROCESO
-            printf("El proceso de Consulta no pide el testigo.\n");
-            #endif
-
-            sem_wait(&(mem->sem_testigo));
-            sem_wait(&(mem->sem_turno_CONS));
-
-            if ((!(mem->testigo) && !mem->turno_CONS) || (!mem->consultas_dentro)){
-
-                // No hay nadie dentro ni tengo el testigo
-
-                sem_post(&(mem->sem_testigo));
-                sem_post(&(mem->sem_turno_CONS));
-
-                sem_wait(&(mem->sem_contador_cons_pendientes));
-
-                if(mem->contador_cons_pendientes == 1){
-
-                    sem_post(&(mem->sem_contador_cons_pendientes));
+                sem_post(&(mem->sem_contador_cons_pendientes));
                     
-                    calcular_prioridad_maxima(mem);
+                calcular_prioridad_maxima(mem);
 
-                    sem_wait(&(mem->sem_prioridad_maxima));
-                    sem_wait(&(mem->sem_testigo));
+                sem_wait(&(mem->sem_prioridad_maxima));
+                sem_wait(&(mem->sem_testigo));
 
-                    if(mem->testigo && mem->prioridad_maxima == CONSULTA){
+                if(mem->testigo && mem->prioridad_maxima == CONSULTA){
 
-                        sem_post(&(mem->sem_prioridad_maxima));
+                    sem_post(&(mem->sem_prioridad_maxima));
                     
-                        sem_wait(&(mem->sem_turno_CONS));
-                        mem->turno_CONS = 1;
-                        sem_post(&(mem->sem_turno_CONS));
+                    sem_wait(&(mem->sem_turno_CONS));
+                    mem->turno_CONS = 1;
+                    sem_post(&(mem->sem_turno_CONS));
 
-                        sem_wait(&(mem->sem_turno));
-                        mem->turno = 1;
-                        sem_post(&(mem->sem_turno));
+                    sem_wait(&(mem->sem_turno));
+                    mem->turno = 1;
+                    sem_post(&(mem->sem_turno));
 
-                        sem_wait(&(mem->sem_dentro));
-                        mem->dentro = 1;
-                        sem_post(&(mem->sem_dentro));
+                    sem_wait(&(mem->sem_dentro));
+                    mem->dentro = 1;
+                    sem_post(&(mem->sem_dentro));
 
-                        sem_wait(&(mem->sem_nodos_con_consultas));
-                        mem->nodos_con_consultas[mi_id - 1] = 1;
-                        sem_post(&(mem->sem_nodos_con_consultas));
+                    sem_wait(&(mem->sem_nodos_con_consultas));
+                    mem->nodos_con_consultas[mi_id - 1] = 1;
+                    sem_post(&(mem->sem_nodos_con_consultas));
 
-                    }else{
-
-                        sem_post(&(mem->sem_prioridad_maxima));
-                        sem_post(&(mem->sem_testigo));
-                    
-                        #ifdef __PRINT_PROCESO
-                        printf("El proceso de Consulta tiene que esperar.\n");
-                        #endif
-
-                        sem_wait(&(mem->sem_cons_pend));
-
-                    }
                 }else{
 
-                    sem_post(&(mem->sem_contador_cons_pendientes));
-
+                    sem_post(&(mem->sem_prioridad_maxima));
+                    sem_post(&(mem->sem_testigo));
+                    
                     #ifdef __PRINT_PROCESO
                     printf("El proceso de Consulta tiene que esperar.\n");
                     #endif
@@ -137,8 +126,20 @@ int main(int argc, char* argv[]){
                     sem_wait(&(mem->sem_cons_pend));
 
                 }
-            
+
             }else{
+
+                sem_post(&(mem->sem_contador_cons_pendientes));
+
+                #ifdef __PRINT_PROCESO
+                printf("El proceso de Consulta tiene que esperar.\n");
+                #endif
+
+                sem_wait(&(mem->sem_cons_pend));
+
+            }
+            
+        }else{
 
             // No hay nadie dentro
 
@@ -219,16 +220,18 @@ int main(int argc, char* argv[]){
 
         }
 
-        gettimeofday(&timeFin, NULL);
+    }
 
-        int secondsSC = timeSC.tv_sec - timeInicio.tv_sec;
-        int microsSC = secondsSC*1000000 + timeSC.tv_usec - timeInicio.tv_usec;
+    gettimeofday(&timeFin, NULL);
 
-        int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
-        int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
+    int secondsSC = timeSC.tv_sec - timeInicio.tv_sec;
+    int microsSC = secondsSC*1000000 + timeSC.tv_usec - timeInicio.tv_usec;
 
-        fprintf(fichero_salida, "[%d,Consultas,%d,%d]", mi_id, microsSC, microsSalida);
+    int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
+    int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
 
-        return 0;
+    fprintf(fichero_salida, "[%d,Consultas,%d,%d]", mi_id, microsSC, microsSalida);
+
+    return 0;
 
 }
