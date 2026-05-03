@@ -147,7 +147,7 @@ int main(int argc, char *argv[]){
                     sem_post(&mem->sem_testigo);
                     sem_post(&mem->sem_prioridad_maxima_otro_nodo);
                     sem_post(&mem->sem_prioridad_maxima);
-                    send_testigo_falso(mi_id,mem);
+                    send_testigo_copia(mi_id,mem);
                 }else{
                     sem_post(&mem->sem_testigo);
                     sem_post(&mem->sem_prioridad_maxima_otro_nodo);
@@ -340,8 +340,109 @@ int main(int argc, char *argv[]){
             
             break;
             case 3: // SE RECIBE UN TESTIGO COPIA PARA DAR ACCESO A LEER 
+
+            #ifdef PRINT_RX
+                printf("[RECEPTOR] Nodo %d ha recibido un testigo copia del nodo maestro %d\n", mi_id, mensaje_rx.id);
+            #endif
+            sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+            mem->prioridad_maxima_otro_nodo = 0;
+            sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+
+            sem_wait(&(mem->sem_atendidas));
+            sem_wait(&(mem->sem_peticiones));
+            for(int i=0; i < mem->num_nodos; i++){
+                if(i == mi_id -1){
+                    continue;
+                }
+                for(int j=0; j < P; j++){
+                    mem->atendidas[i][j] = mensaje_rx.atendidas[i][j];
+                    if(mem->atendidas[i][j] < mem->peticiones[i][j]){
+                        sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+                        mem->prioridad_maxima_otro_nodo = max(mem->prioridad_maxima_otro_nodo, j+1);
+                        sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                    }
+                }
+            }
+            sem_post(&(mem->sem_atendidas));
+            sem_post(&(mem->sem_peticiones));   
+            calcular_prioridad_maxima(mem);
+
+            sem_wait(&(mem->sem_prioridad_maxima_otro_nodo));
+            sem_wait(&(mem->sem_prioridad_maxima));
+            if(mem->prioridad_maxima_otro_nodo > CONSULTA || mem->prioridad_maxima > CONSULTA){
+                //DEVUELVO EL TESTIGO COPIA
+                sem_post(&(mem->sem_prioridad_maxima));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                msgbuf_mensaje mensaje_testigo_copia;
+                mensaje_testigo_copia.msg_type = 4;
+                mensaje_testigo_copia.id = mi_id;
+                mensaje_testigo_copia.id_nodo_master = mensaje_rx.id_nodo_master;
+
+                sem_wait(&(mem->sem_buzones_nodos));
+                if(msgsnd(mem->buzones_nodos[mensaje_testigo_copia.id_nodo_master-1], &mensaje_testigo_copia, sizeof(mensaje_testigo_copia)-sizeof(long), 0) == -1){
+                    perror("Error al enviar el testigo copia");
+                }
+                sem_post(&(mem->sem_buzones_nodos));
+
+            }else{
+                sem_post(&(mem->sem_prioridad_maxima));
+                sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
+                
+                sem_wait(&(mem->sem_turno_CONS));
+                mem->turno_CONS = 1;
+                sem_post(&(mem->sem_turno_CONS));
+
+                sem_wait(&(mem->sem_turno));
+                mem->turno = 1;
+                sem_post(&(mem->sem_turno));
+
+                sem_wait(&(mem->sem_atendidas));
+                sem_wait(&(mem->sem_peticiones));
+                mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
+                sem_post(&(mem->sem_peticiones));
+                sem_post(&(mem->sem_atendidas));
+                sem_wait(&(mem->sem_id_nodo_master));
+                mem->id_nodo_master = mensaje_rx.id_nodo_master;
+                sem_post(&(mem->sem_id_nodo_master));
+                sem_wait(&(mem->sem_contador_cons_pendientes));
+                for(int i=0;i < mem->contador_cons_pendientes; i++){
+                    sem_post(&(mem->sem_cons_pend));
+                }
+                sem_post(&(mem->sem_contador_cons_pendientes));
+            }
             break;
             case 4: // SE RECIBE UN TESTIGO COPIA UNA VEZ QUE SE HA TERMINADO DE LEER
+
+            #ifdef PRINT_RX
+                printf("[RECEPTOR] Nodo %d ha recibido un testigo copia del nodo NO maestro %d\n", mi_id, mensaje_rx.id);
+            #endif            
+            sem_wait(&(mem->sem_nodos_con_consultas));
+            mem->nodos_con_consultas[mensaje_rx.id - 1] = 0;
+            sem_post(&(mem->sem_nodos_con_consultas));
+            sem_wait(&(mem->sem_atendidas));
+            sem_wait(&(mem->sem_peticiones));
+            mem->atendidas[mensaje_rx.id - 1][CONSULTA - 1] = mem->peticiones[mensaje_rx.id - 1][CONSULTA - 1];
+            sem_post(&(mem->sem_atendidas));
+            sem_post(&(mem->sem_peticiones));
+
+            sem_wait(&(mem->sem_testigos_recogidos));
+            mem->testigos_recogidos = 1;
+            sem_wait(&(mem->sem_nodos_con_consultas));
+            mem->nodos_con_consultas[mi_id - 1] = 0;
+            for(int i = 0; i < mem->num_nodos; i++){
+                if(mem->nodos_con_consultas[i] == 1){   //REVISAR ESTO.
+                    mem->testigos_recogidos = 0;
+                    break;
+                }
+            }
+            sem_post(&(mem->sem_nodos_con_consultas));
+            if(mem->testigos_recogidos){
+                sem_post(&(mem->sem_testigos_recogidos));
+                decidir_siguiente_turno_master(mi_id, mem);
+            }else{
+                sem_post(&(mem->sem_testigos_recogidos));
+            }
+
             break;
         }
     }
