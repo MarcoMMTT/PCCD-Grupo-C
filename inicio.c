@@ -3,6 +3,7 @@
 #include<stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/wait.h>
 
 void controlar_rafaga(int *lanzados_en_rafaga, int tamRafaga, int tiempoEntreRafagas) {
     if (tamRafaga <= 0) return;
@@ -179,11 +180,10 @@ int main(int argc, char *argv[]){
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
         }
-
-
-
-
-        ///////////HACER RÁFAGAS DE PROCESOS.
+        
+    }
+    for (i = 0; i < numOperaciones; i++) {
+        waitpid(procesosHijos[i], NULL, 0);
     }
     printf("SIMULACIÓN COMENZADA\n");
     return 0;

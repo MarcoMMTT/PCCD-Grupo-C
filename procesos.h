@@ -26,10 +26,10 @@
 //----------------------------------------------------- {Ifdefs} ----------------------------------------
 //- Puede ser interesantre implementar variables de condición para distintas ejecuciones                -
 //-------------------------------------------------------------------------------------------------------
-//#define PRINT_RX        // comentar en caso de no querer mensajes del proceso receptor
-//#define PRINT_PROCESO   // comentar en caso de no querer mensajes de los procesos escritores del nodo.
-//#define PRINT_CONSULTAS // comentar en caso deno querer mensajes de los procesos consultas.
-//#define DEBUG
+#define PRINT_RX        // comentar en caso de no querer mensajes del proceso receptor
+#define PRINT_PROCESO   // comentar en caso de no querer mensajes de los procesos escritores del nodo.
+#define PRINT_CONSULTAS // comentar en caso deno querer mensajes de los procesos consultas.
+#define DEBUG
 //-------------------------------------------------------------------------------------------------------------
 
 #define NUM_MAX_NODOS 100 // Número máximo de nodos en el sistema. Se puede modificar según las necesidades del sistema.
@@ -336,26 +336,37 @@ void send_testigo(int mi_id, memoria_nodo *mem){
 
     // Enviar testigo al nodo encontrado
     if(encontrado){
-        mensaje_testigo.id = id_buscar;
+        mensaje_testigo.id = mi_id;
+
         sem_wait(&(mem->sem_atendidas));
-        memcpy(mensaje_testigo.atendidas, mem->atendidas, sizeof(mem->atendidas));
+        memcpy(mensaje_testigo.atendidas,mem->atendidas,sizeof(mensaje_testigo.atendidas));
         sem_post(&(mem->sem_atendidas));
 
         sem_wait(&(mem->sem_testigo));
+        if(mem->testigo == 0){
+            sem_post(&(mem->sem_testigo));
+            return;
+        }
         mem->testigo = 0;
         sem_post(&(mem->sem_testigo));
 
+        sem_wait(&(mem->sem_nodo_master));
+        mem->nodo_master = 0;
+        sem_post(&(mem->sem_nodo_master));
+
         sem_wait(&(mem->sem_buzones_nodos));
-        if(msgsnd(
-            mem->buzones_nodos[id_buscar-1], &mensaje_testigo, sizeof(mensaje_testigo) - sizeof(long), 0) == -1){
+        if(msgsnd(mem->buzones_nodos[id_buscar-1],
+                &mensaje_testigo,
+                sizeof(mensaje_testigo) - sizeof(long),
+                0) == -1){
             perror("Error al enviar el testigo");
         }
         sem_post(&(mem->sem_buzones_nodos));
-                #ifdef __DEBUG
+
+        #ifdef __DEBUG
         printf("Testigo enviado desde nodo %d al nodo %d\n", mi_id, id_buscar);
         #endif
-
-    } else {
+    }else {
         // Sin destinatario: no hay peticiones pendientes en el sistema
         #ifdef __DEBUG
         printf("DEBUG: No hay ningún nodo esperando el testigo.\n");
