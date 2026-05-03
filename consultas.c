@@ -230,7 +230,7 @@ int main(int argc, char* argv[]){
     int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
     int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
 
-    fprintf(fichero_salida, "%d,Consultas,%d,%d", mi_id, microsSC, microsSalida);
+    fprintf(fichero_salida, "%d,Consultas,%d,%d\n", mi_id, microsSC, microsSalida);
 
     return 0;
 
