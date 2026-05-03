@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
     int mi_id = atoi(argv[1]);
     struct timeval timeInicio, timeSC, timeFinSC, timeFin;
-    FILE* fichero_salida = fopen("salida.txt", "a");
+    FILE* ficheroSalida = fopen("salida.txt", "a");
 
     // Vincular la memoria compartida
     int memoria_id = shmget(mi_id, sizeof(memoria_nodo), 0);
@@ -309,14 +309,14 @@ int main(int argc, char *argv[]) {
 
     gettimeofday (&timeFin, NULL);
 
-    int secondsSC = (timeSC.tv_sec - timeInicio.tv_sec);
-    int microsSC = ((secondsSC * 1000000) + timeSC.tv_usec) - (timeInicio.tv_usec);
+    int secondsSC = timeSC.tv_sec - timeInicio.tv_sec;
+    int microsSC = secondsSC*1000000 + timeSC.tv_usec - timeInicio.tv_usec;
 
-    int secondsSalir = (timeFin.tv_sec - timeFinSC.tv_sec);
-    int microsSalir= ((secondsSalir * 1000000) + timeFin.tv_usec) - (timeFinSC.tv_usec);
+    int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
+    int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
 
     // tiempo que tarda en entrar en la SC en microsegundos, tiempo que tarda en salir desde que sale de SC en microsegundos
-    fprintf (fichero_salida, "[%i,Reservas,%i,%i]\n", mi_id ,microsSC,microsSalir);
+    fprintf (ficheroSalida, "%d,Reservas,%d,%d\n", mi_id , microsSC, microsSalida);
 
     return 0;
 
