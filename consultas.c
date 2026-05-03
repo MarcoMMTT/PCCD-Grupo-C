@@ -28,7 +28,7 @@ int main(int argc, char* argv[]){
     printf("Proceso de Consulta.\n");
     #endif
 
-    sleep(3);
+    usleep(3);
 
     gettimeofday(&timeInicio, NULL);
 
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]){
         mem->consultas_dentro++;
         sem_post(&(mem->sem_consultas_dentro));
 
-        sleep(mem->tiempo_SC);
+        usleep(mem->tiempo_SC);
 
         gettimeofday(&timeFinSC, NULL);
 

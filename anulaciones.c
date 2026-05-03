@@ -138,7 +138,7 @@ int main (int argc, char* argv[]){
         mem->contador_procesos_max_SC++;
         sem_post(&(mem->sem_contador_procesos_max_SC));
 
-        sleep(mem->tiempo_SC);
+        usleep(mem->tiempo_SC);
 
         #ifdef __PRINT_PROCESO
         printf("Proceso de anulación sale de la SC.\n");
