@@ -197,7 +197,7 @@ int main(int argc, char* argv[]){
             mem->turno = 0;
             sem_post(&(mem->sem_turno));
 
-            send_peticiones(mi_id, mem, CONSULTA);
+            gestionar_fin_consulta(mi_id, mem);
 
             #ifdef __PRINT_PROCESO
             printf("Finaliza el proceso de Consulta.\n");
