@@ -4,6 +4,7 @@
 #include <sys/ipc.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/shm.h>
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {

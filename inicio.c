@@ -154,7 +154,7 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                execl("./admin", "admin", idNodo, NULL);
+                execl("./administraciones", "administraciones", idNodo, NULL);
                 return 0;   
             }
             n++;
@@ -182,9 +182,11 @@ int main(int argc, char *argv[]){
         }
         
     }
+    printf("SIMULACIÓN COMENZADA\n");
     for (i = 0; i < numOperaciones; i++) {
         waitpid(procesosHijos[i], NULL, 0);
     }
-    printf("SIMULACIÓN COMENZADA\n");
+    printf("SIMULACIÓN TERMINADA\n");
+    
     return 0;
 }
