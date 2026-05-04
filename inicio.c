@@ -177,12 +177,12 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
-                if(atoi(argv[2]) == 1) {
-                    usleep(1000000);
-                    if(a == numReservas/2) {
-                        execl("./pagos", "pagos", idNodo, NULL);
-                    }
-                }
+//                if(atoi(argv[2]) == 1) {
+//                    usleep(1000000);
+//                    if(a == numReservas/2) {
+//                        execl("./pagos", "pagos", idNodo, NULL);
+//                    }
+//                }
                 execl("./reservas", "reservas", idNodo, NULL);
             }
             n++;
