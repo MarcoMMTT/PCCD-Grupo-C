@@ -7,6 +7,14 @@
 #include <sys/shm.h>
 
 int main(int argc, char *argv[]) {
+
+    system("pkill receptor");
+    system("pkill consultas");
+    system("pkill pagos");
+    system("pkill anulaciones");
+    system("pkill reservas");
+    system("pkill admin");
+    
     if (argc != 3) {
         printf("Se necesitan dos argumentos: el primero el primer id de buzón, el segundo el último id de buzón a borrar\n");
         printf("Uso: %s [primer_id] [ultimo_id]\n", argv[0]);
