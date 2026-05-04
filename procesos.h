@@ -39,7 +39,7 @@
 #define RESERVA 2
 #define CONSULTA 1
 
-#define EVITAR_RETENCION 10000 // Número de procesos que pueden quedarse pendientes sin que se considere retención
+#define EVITAR_RETENCION 10000000000 // Número de procesos que pueden quedarse pendientes sin que se considere retención
 
 
 /**

@@ -135,6 +135,10 @@ int main(int argc, char *argv[]){
 
         for(a=0;a<numAnulaciones;a++){
             procesosHijos[n] = fork();
+            if (procesosHijos[n] < 0) {
+                perror("fork");
+                exit(1);
+            }
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
                 execl("./anulaciones", "anulaciones", idNodo, NULL);
@@ -146,6 +150,10 @@ int main(int argc, char *argv[]){
 
         for(a=0;a<numPagos;a++){
             procesosHijos[n] = fork();
+            if (procesosHijos[n] < 0) {
+                perror("fork");
+                exit(1);
+            }
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
                 execl("./pagos", "pagos", idNodo, NULL);
@@ -158,6 +166,10 @@ int main(int argc, char *argv[]){
         
         for(a=0;a<numAdmin;a++){
             procesosHijos[n] = fork();
+            if (procesosHijos[n] < 0) {
+                perror("fork");
+                exit(1);
+            }
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
                 execl("./administraciones", "administraciones", idNodo, NULL);
@@ -169,6 +181,10 @@ int main(int argc, char *argv[]){
         }
         for(a=0;a<numReservas;a++){
             procesosHijos[n] = fork();
+            if (procesosHijos[n] < 0) {
+                perror("fork");
+                exit(1);
+            }
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
                 execl("./reservas", "reservas", idNodo, NULL);
@@ -180,6 +196,10 @@ int main(int argc, char *argv[]){
         
         for(a=0;a<numConsultas;a++){
             procesosHijos[n] = fork();
+            if (procesosHijos[n] < 0) {
+                perror("fork");
+                exit(1);
+            }
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
                 execl("./consultas", "consultas", idNodo, NULL);
@@ -204,10 +224,13 @@ int main(int argc, char *argv[]){
 
     double tiempo_ideal = ((double)numNodos * numPagos * tiempoSC) / 1000000.0;
 
-    FILE *f = fopen("metricas_simulacion_solo_pagos.csv", "a");
-    fprintf(f, "%d,%d,%d,%.6f,%.6f\n",
+    FILE *f = fopen("metricas_simulacion_solo_pagos_2.csv", "a");
+    int totalProcesos = numNodos * numPagos;
+
+    fprintf(f, "%d,%d,%d,%d,%.6f,%.6f\n",
         numNodos,
         numPagos,
+        totalProcesos,
         tiempoSC,
         tiempo_ideal,
         segundos_totales);
