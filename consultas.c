@@ -181,7 +181,7 @@ int main(int argc, char* argv[]){
         sem_wait(&(mem->sem_contador_cons_pendientes));
         sem_wait(&(mem->sem_consultas_dentro));
 
-        if((!mem->turno_CONS && mem->consultas_dentro) || mem->contador_cons_pendientes == 0){
+        if(!mem->turno_CONS || (mem->consultas_dentro && mem->contador_cons_pendientes == 0)){
 
             sem_post(&(mem->sem_turno_CONS));
             sem_post(&(mem->sem_contador_cons_pendientes));

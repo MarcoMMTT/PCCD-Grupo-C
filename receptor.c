@@ -39,6 +39,7 @@ int main(int argc, char *argv[]){
     mem->tiempo_SC = tiempoSC;
     memset(mem->atendidas, 0, sizeof(mem->atendidas));
     memset(mem->peticiones, 0, sizeof(mem->peticiones));
+    memset(mem->nodos_con_consultas, 0, sizeof(mem->nodos_con_consultas));
 
     mem->testigos_recogidos = 0;
     mem->id_nodo_master = 0;
