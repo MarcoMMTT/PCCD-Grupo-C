@@ -5,7 +5,7 @@ numAnulaciones=20
 numReservas=20
 numAdmin=20
 numConsultas=0
-tiempoSC=2000000
+tiempoSC=20000
 tamRafaga=100000
 tiempoEntreRafagas=0
 =======================
