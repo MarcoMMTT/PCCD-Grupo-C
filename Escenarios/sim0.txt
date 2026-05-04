@@ -1,0 +1,11 @@
+===================== Simulación 0:
+numNodos=4
+numPagos=20
+numAnulaciones=20
+numReservas=20
+numAdmin=20
+numConsultas=0
+tiempoSC=2000000
+tamRafaga=100000
+tiempoEntreRafagas=0
+=======================
