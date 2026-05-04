@@ -32,7 +32,7 @@
 #define DEBUG
 //-------------------------------------------------------------------------------------------------------------
 
-#define NUM_MAX_NODOS 100 // Número máximo de nodos en el sistema. Se puede modificar según las necesidades del sistema.
+#define NUM_MAX_NODOS 10000 // Número máximo de nodos en el sistema. Se puede modificar según las necesidades del sistema.
 #define P 4 // Nº de prioridades distintas: 1. Anulaciones -> 2. Pagos - Administración -> 3. Reservas -> 4. Consultas 
 #define ANUL 4
 #define PAG_ADM 3
