@@ -16,10 +16,13 @@ void controlar_rafaga(int *lanzados_en_rafaga, int tamRafaga, int tiempoEntreRaf
     }
 }
 
-
+/**
+ * Argv[2] es el modo de inicio apra distintos escenarios:
+ * 1 - Escritor tras Lector v1 (sim3.txt)
+ */
 int main(int argc, char *argv[]){
-    if(argc < 2){
-        printf("ERROR. USO: %s [archivo]\n",argv[0]);
+    if(argc < 3){
+        printf("ERROR. USO: %s [archivo] [modo_inicio]\n",argv[0]);
         return 1;
     }
     remove("salida.txt");
@@ -159,6 +162,7 @@ int main(int argc, char *argv[]){
                 return 0;   
             }
             n++;
+            controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
         }
         for(a=0;a<numReservas;a++){
             procesosHijos[n] = fork();
@@ -180,6 +184,10 @@ int main(int argc, char *argv[]){
             }
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
+        }
+        if(argv[2] == 1) {
+            sleep(1);
+            execl("./pagos", "pagos", idNodo, NULL);
         }
         
     }
