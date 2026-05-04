@@ -1,4 +1,5 @@
 ./matarProcesos.sh
+
 # Borrar todos los segmentos de memoria compartida (Shared Memory)
 for id in $(ipcs -m | awk 'NR > 3 {print $2}'); do
     ipcrm -m $id
