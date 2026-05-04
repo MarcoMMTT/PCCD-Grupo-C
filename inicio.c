@@ -135,8 +135,13 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
+//                if(atoi(argv[2]) == 1) {
+//                    usleep(100000);
+//                    if(a == numConsultas/2) {
+//                        execl("./pagos", "pagos", idNodo, NULL);
+//                    }
+//                }
                 execl("./anulaciones", "anulaciones", idNodo, NULL);
-                return 0;
             }
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
@@ -147,7 +152,6 @@ int main(int argc, char *argv[]){
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
                 execl("./pagos", "pagos", idNodo, NULL);
-                return 0;
             }
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
@@ -158,8 +162,13 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
+//                if(atoi(argv[2]) == 1) {
+//                    usleep(100000);
+//                    if(a == numConsultas/2) {
+//                        execl("./pagos", "pagos", idNodo, NULL);
+//                    }
+//                }
                 execl("./administraciones", "administraciones", idNodo, NULL);
-                return 0;   
             }
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
@@ -168,8 +177,13 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
+                if(atoi(argv[2]) == 1) {
+                    usleep(1000000);
+                    if(a == numReservas/2) {
+                        execl("./pagos", "pagos", idNodo, NULL);
+                    }
+                }
                 execl("./reservas", "reservas", idNodo, NULL);
-                return 0;
             }
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
@@ -179,17 +193,17 @@ int main(int argc, char *argv[]){
             procesosHijos[n] = fork();
             if(procesosHijos[n] == 0){
                 //Aquí va el execl
+//                if(atoi(argv[2]) == 1) {
+//                    usleep(100000);
+//                    if(a == numConsultas/2) {
+//                        execl("./pagos", "pagos", idNodo, NULL);
+//                    }
+//                }
                 execl("./consultas", "consultas", idNodo, NULL);
-                return 0;
             }
             n++;
             controlar_rafaga(&lanzados_en_rafaga, tamRafaga, tiempoEntreRafagas);
         }
-        if(argv[2] == 1) {
-            sleep(1);
-            execl("./pagos", "pagos", idNodo, NULL);
-        }
-        
     }
     printf("SIMULACIÓN COMENZADA\n");
     for (i = 0; i < numOperaciones; i++) {

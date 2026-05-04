@@ -389,13 +389,13 @@ int main (int argc, char* argv[]){
 
         gettimeofday(&timeFin, NULL);
 
-        int secondsSC = timeSC.tv_sec - timeInicio.tv_sec;
-        int microsSC = secondsSC*1000000 + timeSC.tv_usec - timeInicio.tv_usec;
+        long secondsSC = timeSC.tv_sec - timeInicio.tv_sec;
+        long microsSC = secondsSC*1000000 + timeSC.tv_usec - timeInicio.tv_usec;
 
-        int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
-        int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
+        long secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
+        long microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
 
-        fprintf(ficheroSalida, "%d,Anulaciones,%d,%d\n", mi_id, microsSC, microsSalida);
+        fprintf(ficheroSalida, "%d,Anulaciones,%ld,%ld\n", mi_id, microsSC, microsSalida);
 
         return 0;
 
