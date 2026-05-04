@@ -161,31 +161,8 @@ int main(int argc, char* argv[]){
         mem->consultas_dentro++;
         sem_post(&(mem->sem_consultas_dentro));
 
-        //usleep(mem->tiempo_SC); seccion critica antigua
-        // SC fix para adelantar consultas
-        int tiempo_restante = mem->tiempo_SC;
-        int intervalo_check = 1000; // Check cada 1ms (1000 us)
+        usleep(mem->tiempo_SC);
         
-        while(tiempo_restante > 0){
-            // Dormir una porción pequeña
-            int sleep_time = (tiempo_restante > intervalo_check) ? intervalo_check : tiempo_restante;
-            usleep(sleep_time);
-            tiempo_restante -= sleep_time;
-            
-            // Verificar si hay peticiones de mayor prioridad
-            sem_wait(&(mem->sem_prioridad_maxima));
-            int prioridad_actual = mem->prioridad_maxima;
-            sem_post(&(mem->sem_prioridad_maxima));
-            
-            // Si hay algo más prioritario que consultas, abandonar SC
-            if(prioridad_actual > CONSULTA){
-                #ifdef __PRINT_PROCESO
-                printf("El proceso de Consulta detecta petición prioritaria y abandona SC.\n");
-                #endif
-                tiempo_restante = 0; // Salir del loop
-            }
-        }
-
         gettimeofday(&timeFinSC, NULL);
 
         #ifdef __PRINT_PROCESO
