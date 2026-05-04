@@ -135,7 +135,6 @@ int main(int argc, char *argv[]){
     printf("El proceso de Reserva sale de la SC.\n");
     #endif
     
-    printf("hola\n");
     gettimeofday (&timeFinSC, NULL);
 
     calcular_prioridad_maxima(mem);
