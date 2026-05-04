@@ -7,106 +7,136 @@
 #include "procesos.h"
 #include <sys/time.h>
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Uso: %s <id_nodo>\n", argv[0]);
-        exit(EXIT_FAILURE);
+int main(int argc, char *argv[]){
+
+    if (argc != 2){
+        printf("La forma correcta de ejecución es: %s \"id_nodo\"\n", argv[0]);
+        return -1;
     }
+    struct timeval timeInicio, timeSC, timeFinSC, timeFin;
+
+    FILE * ficheroSalida= fopen ("salida.txt", "a");
 
     int mi_id = atoi(argv[1]);
-    struct timeval timeInicio, timeSC, timeFinSC, timeFin;
-    FILE* ficheroSalida = fopen("salida.txt", "a");
-
-    // Vincular la memoria compartida
+    
+    memoria_nodo *mem = NULL;
+    
+    // inicialización memoria compartida
     int memoria_id = shmget(mi_id, sizeof(memoria_nodo), 0);
-    if (memoria_id == -1) {
-        perror("Error: No se pudo conectar a la memoria compartida.");
-        return EXIT_FAILURE;
-    }
-    memoria_nodo *mem = (memoria_nodo *)shmat(memoria_id, NULL, 0);
-
-    gettimeofday(&timeInicio, NULL);
+    mem = shmat(memoria_id, NULL, 0);
     
-    // Incrementar el contador de procesos de reserva pendientes en el nodo
+    #ifdef __DEBUG
+    printf("El id de la memoria compartida es: %i\n", memoria_id);
+    #endif
+
+    #ifdef __PRINT_PROCESO
+    printf("Proceso de Reservas.\n"); 
+    #endif
+
+    gettimeofday (&timeInicio, NULL);
+
     sem_wait(&(mem->sem_contador_res_pendientes));
-    mem->contador_res_pendientes++;
-    //sem_post(&(mem->sem_contador_res_pendientes)); ESTO TIENE QUE ESTAR EN CUALQUIER CASO DESPUES DE USARSE
+    mem->contador_res_pendientes = mem->contador_res_pendientes + 1;
+    sem_wait(&(mem->sem_testigo));
+    sem_wait(&(mem->sem_turno_RES));
+    sem_wait(&(mem->sem_turno));
+    sem_wait(&(mem->sem_contador_procesos_max_SC));
 
-    if (mem->contador_res_pendientes == 1) { 
-        sem_post(&(mem->sem_contador_res_pendientes));
-        // Tenemos el testigo en el nodo y nadie está en la Sección Crítica
-        sem_wait(&(mem->sem_testigo));              //
-        if (!(mem->testigo)) {                      // SC: mem->testigo
-            sem_post(&(mem->sem_testigo));          //
-            calcular_prioridad_maxima(mem);         
-            send_peticiones(mi_id, mem, RESERVA);   
-        } else {                                    
-            sem_post(&(mem->sem_testigo));          // SC: mem->testigo
-        }
-
-        // -------------------------------------------------------------------------
-        // ESPERA Y ENTRADA A SECCIÓN CRÍTICA
-        // -------------------------------------------------------------------------
-
-        sem_wait(&(mem->sem_res_pend)); // Tienes token y es tu turno                               
-
-        #ifdef __PRINT_PROCESO
-        printf("El proceso de Reservas accede a la SC.\n");
-        #endif
-
-        sem_wait(&(mem->sem_dentro));       //
-                                            //
-        gettimeofday(&timeSC, NULL);        //
-                                            //
-        mem->dentro = 1;                    // SC: SECCIÓN CRÍTICA
-        usleep(mem->tiempo_SC);             //
-                                            //  
-                                            //
-        gettimeofday(&timeFinSC, NULL);     //
-                                            //
-        mem->dentro = 0;                    //
-                                            //
-        sem_post(&(mem->sem_dentro));       //
-
-        #ifdef __PRINT_PROCESO
-        printf("El proceso de Consulta sale de la SC.\n");
-        #endif
-
-    } else {
-        sem_post(&(mem->sem_contador_res_pendientes));
+    sleep(2);
     
-        // -------------------------------------------------------------------------
-        // ESPERA Y ENTRADA A SECCIÓN CRÍTICA
-        // -------------------------------------------------------------------------
-
-        sem_wait(&(mem->sem_res_pend)); // Tienes token y es tu turno                               
-
-        #ifdef __PRINT_PROCESO
-        printf("El proceso de Reservas accede a la SC.\n");
-        #endif
-
-        sem_wait(&(mem->sem_contador_res_pendientes));
-        mem->contador_res_pendientes--;
+    if ((!mem->testigo && (mem->contador_res_pendientes == 1)) || 
+         (mem->testigo && mem->turno_RES && (mem->contador_res_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION) == 1)
+         || (mem->testigo && (mem->contador_res_pendientes == 1) && !mem->turno_RES && mem->turno)){ 
+        //RAMA DE PEDIR EL TESTIGO
         sem_post(&(mem->sem_contador_res_pendientes));
-
-        sem_wait(&(mem->sem_dentro));       //
-                                            //
-        gettimeofday(&timeSC, NULL);        //
-                                            //
-        mem->dentro = 1;                    // SC: SECCIÓN CRÍTICA
-        usleep(mem->tiempo_SC);             //
-                                            //  
-                                            //
-        gettimeofday(&timeFinSC, NULL);     //
-                                            //
-        mem->dentro = 0;                    //
-                                            //
-        sem_post(&(mem->sem_dentro));       //
-
+        sem_post(&(mem->sem_testigo));
+        sem_post(&(mem->sem_turno_RES));
+        sem_post(&(mem->sem_turno));
+        sem_post(&(mem->sem_contador_procesos_max_SC));
+        
+        sem_wait(&(mem->sem_turno_CONS));
+        mem->turno_CONS = 0; // false
+        sem_post(&(mem->sem_turno_CONS));
+        
+        calcular_prioridad_maxima(mem);
+        
         #ifdef __PRINT_PROCESO
-        printf("El proceso de Consulta sale de la SC.\n");
+        printf("RESERVAS --> Tengo que pedir el testigo\n");
         #endif
+    
+        //Enviamos peticiones
+        send_peticiones(mi_id, mem, RESERVA);
+        
+        // ACABAMOS CON EL ENVIO DE PETICIONES AHORA ME TOCA ESPERAR.
+        sem_wait(&(mem->sem_res_pend));
+    }else{ // NO TENGO QUE PEDIR EL TESTIGO
+        sem_post(&(mem->sem_contador_res_pendientes));
+        sem_post(&(mem->sem_testigo));
+        sem_post(&(mem->sem_turno_RES));
+        sem_post(&(mem->sem_turno));
+        sem_post(&(mem->sem_contador_procesos_max_SC));
+        
+        #ifdef __PRINT_PROCESO
+        printf("El proceso de Reserva no tiene que pedir el testigo.\n");
+        #endif
+        
+        sem_wait(&(mem->sem_testigo));
+        sem_wait(&(mem->sem_dentro));
+        
+        if ((mem->dentro) || !(mem->testigo)){ // SI HAY ALGUIEN DENTRO O NO TENGO EL TESTIGO, ESPERO
+            
+            sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_dentro));
+            
+            #ifdef __PRINT_PROCESO
+            printf("El proceso de Reserva tiene que esperar ya que no tiene permiso.\n");
+            #endif
+            
+            sem_wait(&(mem->sem_res_pend));
+        }else{ // SI NO HAY NADIE DENTRO
+            sem_post(&(mem->sem_testigo));
+            sem_post(&(mem->sem_dentro));
+            
+            sem_wait(&(mem->sem_prioridad_maxima));
+            mem->prioridad_maxima = RESERVA;
+            sem_post(&(mem->sem_prioridad_maxima));
+            
+            sem_wait(&(mem->sem_turno_RES));
+            mem->turno_RES = 1; // true
+            sem_post(&(mem->sem_turno_RES));
+            
+            sem_wait(&(mem->sem_turno));
+            mem->turno = 1; // true
+            sem_post(&(mem->sem_turno));
+        }
     }
+    
+    // SECCIÓN CRÍTICA DE EXCLUSIÓN MUTUA BABY
+    #ifdef __PRINT_PROCESO
+    printf("Proceso de Reserva accede a la SC.\n");
+    #endif
+
+    gettimeofday (&timeSC, NULL);
+
+    sem_wait(&(mem->sem_contador_res_pendientes));
+    mem->contador_res_pendientes = mem->contador_res_pendientes - 1;
+    sem_post(&(mem->sem_contador_res_pendientes));
+    
+    sem_wait(&(mem->sem_dentro));
+    mem->dentro = 1; // true
+    sem_post(&(mem->sem_dentro));
+    
+    sem_wait(&(mem->sem_contador_procesos_max_SC));
+    mem->contador_procesos_max_SC = mem->contador_procesos_max_SC + 1;
+    sem_post(&(mem->sem_contador_procesos_max_SC));
+    
+    usleep(mem->tiempo_SC); 
+    
+    #ifdef __PRINT_PROCESO
+    printf("El proceso de Reserva sale de la SC.\n");
+    #endif
+
+    gettimeofday (&timeFinSC, NULL);
 
     calcular_prioridad_maxima(mem);
 
@@ -149,9 +179,8 @@ int main(int argc, char *argv[]) {
             // Usamos EVITAR_RETENCION y contador_res_pendientes de la nueva cabecera
             if (mem->contador_procesos_max_SC >= EVITAR_RETENCION || (mem->contador_res_pendientes == 0 && mem->prioridad_maxima_otro_nodo != 0)){
                 #ifdef __PRINT_PROCESO
-                printf("RESERVAS --> Quiero evitar la exclusión mutua o ya no hay procesos de esta prioridad en mi nodo.\n");
+                printf("El proceso de Reserva evita exclusion mutua o no hay procesos de esta prioridad en su nodo.\n");
                 #endif
-                
                 sem_post(&(mem->sem_contador_procesos_max_SC));
                 sem_post(&(mem->sem_contador_res_pendientes));
                 sem_post(&(mem->sem_prioridad_maxima_otro_nodo));
@@ -191,7 +220,7 @@ int main(int argc, char *argv[]) {
                 if (mem->prioridad_maxima == ANUL){ 
                     
                     #ifdef __PRINT_PROCESO
-                    printf("RESERVAS --> le doy paso a ANULACIONES.\n");
+                    printf("El proceso de Reserva da paso a un proceso de Anulacion.\n");
                     #endif
                     sem_post(&(mem->sem_prioridad_maxima));
                     
@@ -218,7 +247,7 @@ int main(int argc, char *argv[]) {
                 }else if (mem->prioridad_maxima == PAG_ADM){
                     
                     #ifdef __PRINT_PROCESO
-                    printf("RESERVAS --> le doy paso a PAGOS y ADMINISTRACIÓN.\n");
+                    printf("El proceso de Reserva da paso a un proceso de Administración o Pago.\n");
                     #endif
                     sem_post(&(mem->sem_prioridad_maxima));
                     
@@ -245,7 +274,7 @@ int main(int argc, char *argv[]) {
                 }else if (mem->prioridad_maxima == RESERVA){
                     
                     #ifdef __PRINT_PROCESO
-                    printf("RESERVAS --> mantengo el turno para otra reserva.\n");
+                    printf("El proceso de Reserva mantiene el turno para otra Reserva.\n");
                     #endif
                     sem_post(&(mem->sem_prioridad_maxima));
                     sem_post(&(mem->sem_res_pend));
@@ -253,7 +282,7 @@ int main(int argc, char *argv[]) {
                 }else{ // La prioridad mas alta de mi nodo es CONSULTA
                     
                     #ifdef __PRINT_PROCESO
-                    printf("RESERVAS --> le doy paso a CONSULTAS.\n");
+                    printf("El proceso de Reserva da paso a un proceso de Consultas.\n");
                     #endif
                     sem_post(&(mem->sem_prioridad_maxima));
                     
@@ -272,9 +301,6 @@ int main(int argc, char *argv[]) {
                     sem_wait(&(mem->sem_atendidas));
                     sem_wait(&(mem->sem_peticiones));
                     mem->atendidas[mi_id - 1][CONSULTA - 1] = mem->peticiones[mi_id - 1][CONSULTA - 1];
-                    #ifdef __DEBUG
-                    printf("\tDEBUG --> atendidas %d, peticiones %d.\n",mem->atendidas[mi_id - 1][CONSULTA - 1], mem->peticiones[mi_id - 1][CONSULTA - 1]);
-                    #endif
                     sem_post(&(mem->sem_atendidas));
                     sem_post(&(mem->sem_peticiones));
                     
