@@ -1,0 +1,11 @@
+========SIMULACIÓN 1===============
+numNodos=4
+numPagos=200
+numAnulaciones=0
+numReservas=0
+numAdmin=0
+numConsultas=0
+tiempoSC=2000
+tamRafaga=100000
+tiempoEntreRafagas=0
+====================================== 2ms de SC solo PAGOS

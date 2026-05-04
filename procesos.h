@@ -127,6 +127,9 @@ typedef struct {
     int buzones_nodos[NUM_MAX_NODOS];
     int prioridad_maxima, prioridad_maxima_otro_nodo;
 
+    // Contadores de cuantas peticiones se han hecho para cada tipo: Sirve para ver cuantas operaciones de cada tipo hace cada nodo
+    // int cuantas_ANUL, cuantas_PAG, cuantas_ADM, cuantas_RES, cuantas_CONS;
+
     sem_t sem_testigo, sem_dentro, sem_turno_ANUL, sem_turno_PAG_ADM, sem_turno_RES, sem_turno_CONS, sem_turno,
             sem_atendidas, sem_peticiones, sem_mi_peticion, sem_buzones_nodos, sem_prioridad_maxima,sem_prioridad_maxima_otro_nodo;
 

@@ -22,6 +22,7 @@ int main(int argc, char *argv[]){
         printf("ERROR. USO: %s [archivo]\n",argv[0]);
         return 1;
     }
+    remove("salida.txt");
     char linea[100];
     char idNodo[12];
     int i,numNodos=0,numPagos=0,numAnulaciones=0,numReservas=0,numAdmin=0,numConsultas=0;
