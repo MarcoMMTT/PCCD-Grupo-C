@@ -9,7 +9,7 @@ int main(int argc, char* argv[]){
         exit(EXIT_FAILURE);
     }
 
-    struct timeval timeInicio, timeSC, timeFinSC, timeFin;
+    struct timeval timeInicio, timeSC, timeFinSC, timeFin, timePruebaEscritorInicio, timePruebaEscritorFin;
 
     FILE* fichero_salida = fopen("salida.txt", "a");
 
@@ -37,7 +37,9 @@ int main(int argc, char* argv[]){
     sem_wait(&(mem->sem_turno_PAG_ADM));
     sem_wait(&(mem->sem_turno));
     sem_wait(&(mem->sem_contador_procesos_max_SC));
-
+    
+    gettimeofday(&timePruebaEscritorInicio, NULL);
+    
     if ((!mem->testigo && mem->contador_pag_adm_pendientes == 1) ||
         (mem->testigo && mem->turno_PAG_ADM && (mem->contador_pag_adm_pendientes + mem->contador_procesos_max_SC - EVITAR_RETENCION == 1)) ||
         (mem->testigo && (mem->contador_pag_adm_pendientes == 1) && !mem->turno_PAG_ADM && mem->turno)){
@@ -122,7 +124,7 @@ int main(int argc, char* argv[]){
         #ifdef __PRINT_PROCESO
         printf("Proceso de Pago accede a la SC.\n");
         #endif
-
+        gettimeofday(&timePruebaEscritorFin, NULL);
         gettimeofday(&timeSC, NULL);
 
         sem_wait(&(mem->sem_contador_pag_adm_pendientes));
@@ -375,7 +377,7 @@ int main(int argc, char* argv[]){
         int secondsSalida = timeFin.tv_sec - timeFinSC.tv_sec;
         int microsSalida = secondsSalida*1000000 + timeFin.tv_usec - timeFinSC.tv_usec;
 
-        fprintf(fichero_salida, "%d,Pagos,%d,%d\n", mi_id, microsSC, microsSalida);
+        fprintf(fichero_salida, "%d,Pagos,%d,%d,%d,%d\n", mi_id, microsSC, microsSalida, timePruebaEscritorInicio, timePruebaEscritorFin);
 
         return 0;
 
