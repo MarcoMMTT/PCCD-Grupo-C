@@ -141,7 +141,7 @@ int main(int argc, char *argv[]){
                 //Aquí va el execl
 //                if(atoi(argv[2]) == 1) {
 //                    usleep(100000);
-//                    if(a == numConsultas/2) {
+//                    if(a == numAnulaciones/2) {
 //                        execl("./pagos", "pagos", idNodo, NULL);
 //                    }
 //                }
@@ -168,7 +168,7 @@ int main(int argc, char *argv[]){
                 //Aquí va el execl
 //                if(atoi(argv[2]) == 1) {
 //                    usleep(100000);
-//                    if(a == numConsultas/2) {
+//                    if(a == numAdmin/2) {
 //                        execl("./pagos", "pagos", idNodo, NULL);
 //                    }
 //                }

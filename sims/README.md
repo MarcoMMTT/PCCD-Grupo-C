@@ -1,0 +1,1 @@
+Estos son las simulaciones destacadas de entre todas las diversas simulaciones que hicimos para sacar datos y gráficas.

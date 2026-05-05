@@ -1,0 +1,1 @@
+Usar `sudo ./Scripts/pianoPiano.sh` que ya se encarga de dejar todo listo para un inicio limpio.

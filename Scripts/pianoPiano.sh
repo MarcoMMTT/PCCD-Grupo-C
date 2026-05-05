@@ -1,3 +1,6 @@
+#
+# Este Script mata todos los procesos, borra todos los IPCs y recompila todo de una sola tidada
+#
 ./matarProcesos.sh
 
 # Borrar todos los segmentos de memoria compartida (Shared Memory)
