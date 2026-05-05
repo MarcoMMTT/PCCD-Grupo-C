@@ -7,7 +7,8 @@ anulaciones
 administarciones
 reservas
 consultas
-# También por si compilas otros sin extensión
+venv
+# También por si compilas otrossource venv/bin/activate sin extensión
 *.out
 *.exe
 *.o
