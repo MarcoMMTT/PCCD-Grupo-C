@@ -481,6 +481,25 @@ void send_testigo_copia(int mi_id, memoria_nodo *mem){
             sem_post(&(mem->sem_peticiones));
         }
     }
+
+    // El nodo maestro también puede tener consultas pendientes propias
+    sem_wait(&(mem->sem_nodos_con_consultas));
+    mem->nodos_con_consultas[mi_id - 1] = 1;
+    sem_post(&(mem->sem_nodos_con_consultas));
+
+    sem_wait(&(mem->sem_atendidas));
+    sem_wait(&(mem->sem_peticiones));
+    mem->atendidas[mi_id-1][CONSULTA-1] = mem->peticiones[mi_id-1][CONSULTA-1];
+    sem_post(&(mem->sem_peticiones));
+    sem_post(&(mem->sem_atendidas));
+
+    sem_wait(&(mem->sem_contador_cons_pendientes));
+    int pendientes = mem->contador_cons_pendientes;
+    sem_post(&(mem->sem_contador_cons_pendientes));
+
+    for(int i = 0; i < pendientes; i++){
+        sem_post(&(mem->sem_cons_pend));
+    }
 }
 
 /**
@@ -588,6 +607,30 @@ void decidir_siguiente_turno_master(int mi_id, memoria_nodo *mem){
             #ifdef __DEBUG
             printf("DEBUG: No se hace nada\n");
             #endif
+            sem_wait(&(mem->sem_contador_cons_pendientes));
+            if(mem->contador_cons_pendientes > 0){
+                sem_post(&(mem->sem_contador_cons_pendientes));
+
+                sem_wait(&(mem->sem_turno_CONS));
+                mem->turno_CONS = 1;
+                sem_post(&(mem->sem_turno_CONS));
+
+                sem_wait(&(mem->sem_turno));
+                mem->turno = 1;
+                sem_post(&(mem->sem_turno));
+
+                sem_wait(&(mem->sem_dentro));
+                mem->dentro = 1;
+                sem_post(&(mem->sem_dentro));
+
+                sem_wait(&(mem->sem_nodos_con_consultas));
+                mem->nodos_con_consultas[mi_id - 1] = 1;
+                sem_post(&(mem->sem_nodos_con_consultas));
+
+                sem_post(&(mem->sem_cons_pend));
+            } else {
+            sem_post(&(mem->sem_contador_cons_pendientes));
+            }
         }
     }
 }
@@ -676,13 +719,13 @@ void gestionar_fin_consulta(int mi_id, memoria_nodo *mem){
     sem_post(&(mem->sem_atendidas));
     sem_post(&(mem->sem_peticiones));
 
-    sem_wait(&(mem->sem_contador_cons_pendientes));
+    /*sem_wait(&(mem->sem_contador_cons_pendientes));
     if(mem->contador_cons_pendientes > 0){
         sem_post(&(mem->sem_contador_cons_pendientes));
         send_peticiones(mi_id, mem, CONSULTA);
     }else{
         sem_post(&(mem->sem_contador_cons_pendientes));
-    }
+    }*/
     return;
 }
 
