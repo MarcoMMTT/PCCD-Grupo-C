@@ -6,6 +6,8 @@ gcc -Wall receptor.c -o receptor -lpthread
 gcc -Wall anulaciones.c -o anulaciones -lpthread
 gcc -Wall inicio.c -o inicio -lpthread
 gcc -Wall eliminarTodo.c -o eliminarTodo -lpthread
+gcc -Wall ininicio_solo_pagos.c -o inicio_solo_pagos -lpthread
+gcc -Wall inicio_rafagas.c -o inicio_rafagas -lpthread
 # gcc -Wall eliminarShm.c -o eliminarShm -lpthread
 
 echo "PROGRAMAS COMPILADOS CORRECTAMENTE"
