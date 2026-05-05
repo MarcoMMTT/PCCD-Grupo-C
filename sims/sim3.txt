@@ -1,11 +1,11 @@
 ===================== Escritor tras Lector v1
-numNodos=1
-numPagos=0
-numAnulaciones=0
-numReservas=0
-numAdmin=0
-numConsultas=1
-tiempoSC=2000000
-tamRafaga=100000
+numNodos=50
+numPagos=10
+numAnulaciones=10
+numReservas=10
+numAdmin=10
+numConsultas=10
+tiempoSC=20000
+tamRafaga=0
 tiempoEntreRafagas=0
 =======================
