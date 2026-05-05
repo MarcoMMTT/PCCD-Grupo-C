@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/time.h>
 
 void controlar_rafaga(int *lanzados_en_rafaga, int tamRafaga, int tiempoEntreRafagas) {
     if (tamRafaga <= 0) return;
@@ -34,12 +35,14 @@ int main(int argc, char *argv[]){
     int a;
     int tamRafaga = 0;
     int tiempoEntreRafagas = 0; //En ms
+    struct timeval timeInicio, timeFin;
 
     FILE *ficheroConfig = fopen(argv[1], "r");
     if (ficheroConfig == NULL) {
         printf("No se pudo abrir el archivo %s\n", argv[1]);
         return 1;
     }
+    gettimeofday(&timeInicio, NULL);
     while (fgets(linea, sizeof linea, ficheroConfig) != NULL && linea[0] != '\n') {
         char *eq = strchr(linea, '=');
 
@@ -210,7 +213,13 @@ int main(int argc, char *argv[]){
     for (i = 0; i < numOperaciones; i++) {
         waitpid(procesosHijos[i], NULL, 0);
     }
+    gettimeofday(&timeFin, NULL);
+    
     printf("SIMULACIÓN TERMINADA\n");
+
+    long sec_tiempo_fin_sim = timeFin.tv_sec - timeInicio.tv_sec;
+    long micros_tiempo_fin_sim = sec_tiempo_fin_sim*1000000 + timeFin.tv_usec - timeInicio.tv_usec;
+    //fprintf(fopen("salida.txt", "a"), "%ld", micros_tiempo_fin_sim);
     
     return 0;
 }

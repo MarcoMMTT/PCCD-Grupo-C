@@ -148,78 +148,79 @@ int main(int argc, char* argv[]){
             sem_post(&(mem->sem_turno_CONS));
 
         }
+    }
 
-        // SECCION CRITICA
+    // ==========================================
+    // SECCION CRITICA 
+    // ==========================================
 
-        #ifdef __PRINT_PROCESO
-        printf("El proceso de Consulta accede a la SC.\n");
-        #endif
+    #ifdef __PRINT_PROCESO
+    printf("El proceso de Consulta accede a la SC.\n");
+    #endif
 
-        gettimeofday(&timeSC, NULL);
+    gettimeofday(&timeSC, NULL);
 
-        sem_wait(&(mem->sem_consultas_dentro));
-        mem->consultas_dentro++;
-        sem_post(&(mem->sem_consultas_dentro));
+    sem_wait(&(mem->sem_consultas_dentro));
+    mem->consultas_dentro++;
+    sem_post(&(mem->sem_consultas_dentro));
 
-        usleep(mem->tiempo_SC);
-        
-        gettimeofday(&timeFinSC, NULL);
+    usleep(mem->tiempo_SC);
+    
+    gettimeofday(&timeFinSC, NULL);
 
-        #ifdef __PRINT_PROCESO
-        printf("El proceso de Consulta sale de la SC.\n");
-        #endif
+    #ifdef __PRINT_PROCESO
+    printf("El proceso de Consulta sale de la SC.\n");
+    #endif
 
-        sem_wait(&(mem->sem_consultas_dentro));
-        mem->consultas_dentro--;
-        sem_post(&(mem->sem_consultas_dentro));
+    sem_wait(&(mem->sem_consultas_dentro));
+    mem->consultas_dentro--;
+    sem_post(&(mem->sem_consultas_dentro));
 
-        sem_wait(&(mem->sem_contador_cons_pendientes));
-        mem->contador_cons_pendientes--;
+    sem_wait(&(mem->sem_contador_cons_pendientes));
+    mem->contador_cons_pendientes--;
+    sem_post(&(mem->sem_contador_cons_pendientes));
+
+    sem_wait(&(mem->sem_turno_CONS));
+    sem_wait(&(mem->sem_contador_cons_pendientes));
+    sem_wait(&(mem->sem_consultas_dentro));
+
+    if(!mem->turno_CONS || (mem->consultas_dentro && mem->contador_cons_pendientes == 0)){
+
+        sem_post(&(mem->sem_turno_CONS));
         sem_post(&(mem->sem_contador_cons_pendientes));
+        sem_post(&(mem->sem_consultas_dentro));
+
+        #ifdef __PRINT_PROCESO
+        printf("Este es el último proceso de Consulta y envía el testigo.\n");
+        #endif
+
+        sem_wait(&(mem->sem_dentro));
+        mem->dentro = 0;
+        sem_post(&(mem->sem_dentro));
 
         sem_wait(&(mem->sem_turno_CONS));
-        sem_wait(&(mem->sem_contador_cons_pendientes));
-        sem_wait(&(mem->sem_consultas_dentro));
+        mem->turno_CONS = 0;
+        sem_post(&(mem->sem_turno_CONS));
 
-        if(!mem->turno_CONS || (mem->consultas_dentro && mem->contador_cons_pendientes == 0)){
+        sem_wait(&(mem->sem_turno));
+        mem->turno = 0;
+        sem_post(&(mem->sem_turno));
 
-            sem_post(&(mem->sem_turno_CONS));
-            sem_post(&(mem->sem_contador_cons_pendientes));
-            sem_post(&(mem->sem_consultas_dentro));
+        gestionar_fin_consulta(mi_id, mem);
 
-            #ifdef __PRINT_PROCESO
-            printf("Este es el último proceso de Consulta y envía el testigo.\n");
-            #endif
+        #ifdef __PRINT_PROCESO
+        printf("Finaliza el proceso de Consulta.\n");
+        #endif
 
-            sem_wait(&(mem->sem_dentro));
-            mem->dentro = 0;
-            sem_post(&(mem->sem_dentro));
+    }else{
 
-            sem_wait(&(mem->sem_turno_CONS));
-            mem->turno_CONS = 0;
-            sem_post(&(mem->sem_turno_CONS));
+        sem_post(&(mem->sem_turno_CONS));
+        sem_post(&(mem->sem_contador_cons_pendientes));
+        sem_post(&(mem->sem_consultas_dentro));
 
-            sem_wait(&(mem->sem_turno));
-            mem->turno = 0;
-            sem_post(&(mem->sem_turno));
-
-            gestionar_fin_consulta(mi_id, mem);
-
-            #ifdef __PRINT_PROCESO
-            printf("Finaliza el proceso de Consulta.\n");
-            #endif
-
-        }else{
-
-            sem_post(&(mem->sem_turno_CONS));
-            sem_post(&(mem->sem_contador_cons_pendientes));
-            sem_post(&(mem->sem_consultas_dentro));
-
-            #ifdef __PRINT_PROCESO
-            printf("Finaliza el proceso de Consulta.\n");
-            #endif
-
-        }
+        #ifdef __PRINT_PROCESO
+        printf("Finaliza el proceso de Consulta.\n");
+        #endif
 
     }
 
